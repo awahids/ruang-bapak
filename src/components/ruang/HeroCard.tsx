@@ -10,7 +10,7 @@ export function HeroCard() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8"
+      className="relative w-full overflow-hidden rounded-3xl bg-card p-6 shadow-card sm:p-8"
     >
       {/* Decorative warm wash */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-warm opacity-70" />
@@ -24,7 +24,7 @@ export function HeroCard() {
         className="pointer-events-none absolute -right-4 -top-2 hidden h-40 w-auto select-none object-contain sm:block md:h-48"
       />
 
-      <div className="relative max-w-xl">
+      <div className="relative w-full max-w-xl">
         <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground sm:text-3xl">
           Apa yang lagi berat hari ini?
         </h1>
@@ -44,13 +44,13 @@ export function HeroCard() {
 
           <button
             onClick={() => setAnon(!anon)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card/80 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-2 rounded-2xl bg-card/80 px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
           >
             <EyeOff size={16} strokeWidth={2.2} />
             Anonim
             <span
               className={`relative ml-1 h-5 w-9 rounded-full transition-colors ${
-                anon ? "bg-primary" : "bg-border"
+                anon ? "bg-primary" : "bg-muted"
               }`}
             >
               <span

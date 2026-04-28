@@ -3,10 +3,10 @@ import { Flame, Clock, TrendingUp, UserCheck, SlidersHorizontal } from "lucide-r
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { icon: Flame, label: "Untukmu" },
-  { icon: Clock, label: "Terbaru" },
-  { icon: TrendingUp, label: "Populer" },
-  { icon: UserCheck, label: "Mengikuti" },
+  { icon: Flame, label: "Lagi Anget Nih" },
+  { icon: Clock, label: "Baru Nongol" },
+  { icon: TrendingUp, label: "Lagi Rame" },
+  { icon: UserCheck, label: "Kawan Akrab" },
 ];
 
 interface TabBarProps {
@@ -16,41 +16,38 @@ interface TabBarProps {
 
 export function TabBar({ active, onChange }: TabBarProps) {
   return (
-    <div className="flex items-center gap-1.5 rounded-2xl border border-border bg-card/70 p-1.5 shadow-soft backdrop-blur">
-      <div className="flex flex-1 items-center gap-1 overflow-x-auto">
+    <div className="flex w-full items-center bg-surface/80 px-2 py-1 backdrop-blur-md">
+      <div className="flex flex-1 items-center overflow-x-auto no-scrollbar">
         {tabs.map((t, i) => {
           const Icon = t.icon;
           const isActive = active === i;
           return (
-            <motion.button
+            <button
               key={t.label}
               onClick={() => onChange(i)}
-              whileTap={{ scale: 0.96 }}
               className={cn(
-                "relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors",
-                isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                "relative flex h-12 flex-1 min-w-[120px] items-center justify-center gap-2 text-sm font-medium transition-colors",
+                isActive ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground hover:bg-black/[0.02]"
               )}
             >
+              <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+              {t.label}
               {isActive && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="absolute inset-0 rounded-xl bg-gradient-sage shadow-soft"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                <motion.div
+                  layoutId="active-tab-line"
+                  className="absolute bottom-0 h-1 w-20 rounded-full bg-primary"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
-              <span className="relative flex items-center gap-1.5">
-                <Icon size={13} strokeWidth={2.4} />
-                {t.label}
-              </span>
-            </motion.button>
+            </button>
           );
         })}
       </div>
       <button
         aria-label="Filter"
-        className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        <SlidersHorizontal size={14} strokeWidth={2.2} />
+        <SlidersHorizontal size={16} strokeWidth={2} />
       </button>
     </div>
   );

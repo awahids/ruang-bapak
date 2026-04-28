@@ -8,11 +8,11 @@
 
 @layer base {
   :root {
-    --background: 44 35% 93%;            /* #F4F1E8 */
-    --foreground: 60 4% 17%;             /* #2C2C2A */
+    --background: 44 35% 97%;            /* Cleaner cream white #FDFCF8 */
+    --foreground: 60 4% 15%;             /* Darker text */
 
-    --surface: 42 28% 88%;               /* sidebar/chrome cream */
-    --surface-deep: 41 22% 75%;          /* outer page */
+    --surface: 0 0% 100%;                /* Pure white surface */
+    --surface-deep: 44 35% 94%;          /* Subtle background depth */
 
     --card: 0 0% 100%;
     --card-foreground: 60 4% 17%;
@@ -100,14 +100,25 @@
 }
 
 @layer base {
-  * { @apply border-border; }
   html, body { @apply bg-background text-foreground; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
   body { font-feature-settings: "ss01", "cv11"; -webkit-font-smoothing: antialiased; }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.8); border-radius: 999px; }
   ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
+
+  .glass-card {
+    @apply bg-surface/70 backdrop-blur-md border border-white/20;
+  }
+
+  .border-standard {
+    @apply border-border/40;
+  }
+
+  .feed-item-hover {
+    @apply transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02];
+  }
 }
 
 @layer utilities {

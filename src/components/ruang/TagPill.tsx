@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const tones = {
@@ -12,12 +14,12 @@ export type TagTone = keyof typeof tones;
 
 interface TagPillProps {
   tone?: TagTone;
-  emoji?: string;
-  children: React.ReactNode;
+  icon?: LucideIcon;
+  children: ReactNode;
   className?: string;
 }
 
-export function TagPill({ tone = "sage", emoji, children, className }: TagPillProps) {
+export function TagPill({ tone = "sage", icon: Icon, children, className }: TagPillProps) {
   return (
     <span
       className={cn(
@@ -26,7 +28,7 @@ export function TagPill({ tone = "sage", emoji, children, className }: TagPillPr
         className
       )}
     >
-      {emoji && <span className="text-sm leading-none">{emoji}</span>}
+      {Icon && <Icon size={13} strokeWidth={2.2} className="shrink-0" aria-hidden />}
       {children}
     </span>
   );
