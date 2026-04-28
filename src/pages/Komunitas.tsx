@@ -1,10 +1,10 @@
 import { FeedPage } from "@/components/ruang/FeedPage";
-import { Plus } from "lucide-react";
+import { Plus, Wrench, Baby, TrendingUp } from "lucide-react";
 
 const communities = [
-  { id: 1, name: "Hobi Bengkel", members: "1.2k", description: "Bagi bapak yang suka oprek mesin sendiri.", icon: "🔧" },
-  { id: 2, name: "Parenting Balita", members: "3.5k", description: "Tips sabar ngadepin anak GTM.", icon: "🧒" },
-  { id: 3, name: "Investor Bapak", members: "890", description: "Paham saham biar cicilan aman.", icon: "📈" },
+  { id: 1, name: "Hobi Bengkel", members: "1.2k", description: "Bagi bapak yang suka oprek mesin sendiri.", icon: Wrench },
+  { id: 2, name: "Parenting Balita", members: "3.5k", description: "Tips sabar ngadepin anak GTM.", icon: Baby },
+  { id: 3, name: "Investor Bapak", members: "890", description: "Paham saham biar cicilan aman.", icon: TrendingUp },
 ];
 
 const Komunitas = () => {
@@ -21,7 +21,9 @@ const Komunitas = () => {
             {communities.map((comm) => (
               <div key={comm.id} className="flex min-w-[200px] flex-col rounded-2xl border border-border/60 bg-card p-4 transition-transform hover:scale-[1.02]">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-2xl">{comm.icon}</span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                    <comm.icon size={20} />
+                  </span>
                   <div>
                     <p className="text-sm font-bold text-foreground">{comm.name}</p>
                     <p className="text-[11px] text-muted-foreground">{comm.members} Anggota</p>

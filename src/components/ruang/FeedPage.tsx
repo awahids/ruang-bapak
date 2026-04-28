@@ -6,6 +6,7 @@ import { PostCard } from "./PostCard";
 import { RuangShell } from "./RuangShell";
 import { TabBar } from "./TabBar";
 import { AbsenPakCard } from "./AbsenPakCard";
+import { CheckInPost } from "./CheckInPost";
 
 interface FeedPageProps {
   pageKey: FeedPageKey;
@@ -107,7 +108,9 @@ export function FeedPage({ pageKey, renderHeader }: FeedPageProps) {
         {visibleItems.length > 0 ? (
           <div className="flex flex-col">
             {visibleItems.map((item, index) => (
-              <PostCard key={item.id} post={item} index={index} />
+              pageKey === "aman-pak" 
+                ? <CheckInPost key={item.id} item={item} />
+                : <PostCard key={item.id} post={item} index={index} />
             ))}
           </div>
         ) : (

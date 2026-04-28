@@ -15,6 +15,12 @@ import {
   User,
   UserCheck,
   Users,
+  Wrench,
+  Coffee,
+  Tv,
+  Car,
+  Flame,
+  Camera,
 } from "lucide-react";
 
 export type TagTone = "sage" | "clay" | "plum" | "blue" | "muted";
@@ -552,7 +558,12 @@ export const topikAman: TopikAmanItem[] = [
   { icon: Star, label: "Tugas Negara", tone: "clay" },
   { icon: Moon, label: "Jokes Bapak", tone: "sage" },
   { icon: Heart, label: "Cicilan Aman", tone: "blue" },
-  { icon: Leaf, label: "Ngopi Pagi", tone: "sage" },
+  { icon: Coffee, label: "Ngopi Pagi", tone: "sage" },
+  { icon: Wrench, label: "Perkakas", tone: "blue" },
+  { icon: Tv, label: "Remot TV", tone: "clay" },
+  { icon: Car, label: "Parkir Mundur", tone: "plum" },
+  { icon: Flame, label: "Masak Air", tone: "clay" },
+  { icon: Camera, label: "Foto Anak", tone: "sage" },
   { icon: Coins, label: "Ganti Oli", tone: "clay" },
   { icon: Hand, label: "Ronda Malam", tone: "plum" },
   { icon: Plus, label: "Lainnya", tone: "muted" },

@@ -34,7 +34,7 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
           </button>
         </div>
         <div className="flex flex-col">
-          {topikAman.slice(0, 4).map((t, i) => (
+          {topikAman.slice(0, 6).map((t, i) => (
             <button key={t.label} className="flex flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-muted-foreground">Trending di {t.label}</span>
