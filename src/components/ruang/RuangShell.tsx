@@ -14,7 +14,7 @@ export function RuangShell({ children }: RuangShellProps) {
         Lewati ke konten
       </a>
 
-      <div className="mx-auto flex w-full max-w-[1280px] justify-center px-0 sm:px-4 lg:px-8 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+      <div className="flex w-full justify-center pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         {/* Left Sidebar - Fixed height sticky */}
         <div className="hidden lg:block lg:w-[275px] xl:w-[300px]">
           <div className="sticky top-0 flex h-screen flex-col border-r border-border/40 py-2 pr-4">

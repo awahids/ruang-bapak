@@ -15,7 +15,7 @@ export function MobileBottomNav() {
   return (
     <>
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/40 bg-surface/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-1">
+        <div className="flex w-full items-center justify-between gap-1">
           {primaryNavItems.map((item) => {
             const Icon = item.icon;
 

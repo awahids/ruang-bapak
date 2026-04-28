@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Moon, Sprout, PenLine, ChevronDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
 import { Avatar } from "./Avatar";
@@ -100,14 +100,14 @@ export function Sidebar() {
       </div>
 
       {/* User Profile */}
-      <button className="mt-auto flex items-center gap-3 rounded-full p-3 transition-colors hover:bg-muted/50">
+      <Link to="/login" className="mt-auto flex items-center gap-3 rounded-full p-3 transition-colors hover:bg-muted/50">
         <Avatar initials="AP" color="hsl(28 33% 41%)" size={40} />
         <div className="hidden flex-1 text-left lg:block">
           <p className="text-sm font-bold leading-none text-foreground">Ari Pratama</p>
           <p className="mt-1 text-xs text-muted-foreground">@aripratama</p>
         </div>
         <ChevronDown size={16} className="hidden text-muted-foreground lg:block" />
-      </button>
+      </Link>
     </div>
   );
 }

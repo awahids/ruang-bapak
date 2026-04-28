@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Search, ThumbsUp, MoreHorizontal, Settings } from "lucide-react";
+import { Search, ThumbsUp, MoreHorizontal, Settings, Smile } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { cn } from "@/lib/utils";
 import { butuhDukungan, topikAman } from "@/data/ruang-bapak";
@@ -70,6 +70,18 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
             Tampilkan lebih banyak
           </button>
         </div>
+      </section>
+
+      {/* Daily Tips */}
+      <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-foreground shadow-soft">
+        <div className="flex items-center gap-2 text-primary">
+          <Smile size={18} strokeWidth={2.5} />
+          <h3 className="text-sm font-bold uppercase tracking-wider">Tips Bapak Hari Ini</h3>
+        </div>
+        <p className="mt-3 text-[15px] font-medium leading-relaxed italic">
+          "Kalau anak nanya kenapa langit biru, bilang aja: 'Itu lagi dicat, tapi tukangnya belum turun-turun'."
+        </p>
+        <p className="mt-2 text-right text-[11px] text-muted-foreground">— Bapak Bijak (Level 99)</p>
       </section>
 
       {/* Daily Check-in */}

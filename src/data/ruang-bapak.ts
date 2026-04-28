@@ -402,10 +402,26 @@ const feedItemsProfil: FeedItem[] = [
   },
 ];
 
+const allFeedItems: FeedItem[] = [
+  ...feedItemsBeranda,
+  ...feedItemsCurhat,
+  ...feedItemsDiskusi,
+  ...feedItemsAmanPak,
+  ...feedItemsKomunitas,
+  ...feedItemsInbox,
+  ...feedItemsProfil,
+];
+
+const feedItemById = new Map(allFeedItems.map((item) => [item.id, item]));
+
+export function getFeedItemById(postId: number): FeedItem | undefined {
+  return feedItemById.get(postId);
+}
+
 export const feedPageConfigs: Record<FeedPageKey, FeedPageConfig> = {
   beranda: {
     key: "beranda",
-    title: "Teras Utama",
+    title: "Teras Bapak",
     subtitle: "Linimasa terbaru dari curhat, diskusi, dan cek-in komunitas bapak.",
     composerMode: "status",
     emptyState: "Belum ada postingan. Mulai dari cerita kecil hari ini.",
@@ -465,14 +481,14 @@ export const composerPresets: Record<ComposerMode, ComposerPreset> = {
   status: {
     title: "Cek Sound Hari Ini, Pak?",
     placeholder: "Ada cerita unik, keluhan halus, atau sekadar pengen sapa...",
-    cta: "Kirim Kabar",
+    cta: "Kirim",
     helper: "Cerita ringan atau berat, yang penting jujur ya Pak.",
     quickActions: ["Ngopi", "Ronda", "Tugas Negara"],
   },
   curhat: {
     title: "Ruang Curhat Aman",
     placeholder: "Tulis apa yang lagi berat. Anda bisa anonim.",
-    cta: "Kirim Curhat",
+    cta: "Kirim",
     helper: "Gunakan bahasa apa adanya, kami jaga ruang ini tetap suportif.",
     quickActions: ["Anonim", "Kesehatan Mental", "Stress Kerja"],
   },
@@ -486,7 +502,7 @@ export const composerPresets: Record<ComposerMode, ComposerPreset> = {
   checkin: {
     title: "Cek-in Kondisi Hari Ini",
     placeholder: "Contoh: energi 70%, butuh waktu tenang malam ini.",
-    cta: "Kirim Cek-in",
+    cta: "Cek-in",
     helper: "Satu kalimat jujur bisa jadi pintu dukungan dari bapak lain.",
     quickActions: ["Energi", "Mood", "Dukungan"],
   },
@@ -500,7 +516,7 @@ export const composerPresets: Record<ComposerMode, ComposerPreset> = {
   pesan: {
     title: "Tulis Pesan Dukungan",
     placeholder: "Kirim pesan singkat yang menguatkan bapak lain.",
-    cta: "Kirim Pesan",
+    cta: "Kirim",
     helper: "Pesan yang empatik sering lebih berarti dari solusi panjang.",
     quickActions: ["Terima kasih", "Semangat", "Follow up"],
   },
@@ -514,7 +530,7 @@ export const composerPresets: Record<ComposerMode, ComposerPreset> = {
 };
 
 export const primaryNavItems: PrimaryNavItem[] = [
-  { label: "Teras Utama", to: "/", icon: Home },
+  { label: "Teras Bapak", to: "/", icon: Home },
   { label: "Uneg-uneg", to: "/curhat", icon: MessageCircle },
   { label: "Diskusi", to: "/diskusi", icon: Users },
   { label: "Aman Pak?", to: "/aman-pak", icon: ThumbsUp },

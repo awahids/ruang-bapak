@@ -5,6 +5,7 @@ import { FeedComposer, type ComposerSubmitPayload } from "./FeedComposer";
 import { PostCard } from "./PostCard";
 import { RuangShell } from "./RuangShell";
 import { TabBar } from "./TabBar";
+import { AbsenPakCard } from "./AbsenPakCard";
 
 interface FeedPageProps {
   pageKey: FeedPageKey;
@@ -87,6 +88,12 @@ export function FeedPage({ pageKey }: FeedPageProps) {
         <header className="sticky top-0 z-20 border-b border-border/40 bg-surface/80 px-4 py-3 pb-3 backdrop-blur-md pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
           <h1 className="text-xl font-bold tracking-tight text-foreground">{config.title}</h1>
         </header>
+
+        {pageKey === "aman-pak" && (
+          <div className="border-b border-border/40 bg-surface px-4 py-4 sm:px-6">
+            <AbsenPakCard />
+          </div>
+        )}
 
         <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} />
 

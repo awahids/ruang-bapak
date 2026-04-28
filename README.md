@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Ruang Bapak
 
-TODO: Document your project here
+Aplikasi komunitas digital untuk bapak-bapak Indonesia.

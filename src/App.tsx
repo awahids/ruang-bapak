@@ -10,6 +10,8 @@ import AmanPak from "./pages/AmanPak.tsx";
 import Komunitas from "./pages/Komunitas.tsx";
 import Inbox from "./pages/Inbox.tsx";
 import Profil from "./pages/Profil.tsx";
+import Auth from "./pages/Auth.tsx";
+import PostDetail from "./pages/PostDetail.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,9 @@ const App = () => (
           <Route path="/komunitas" element={<Komunitas />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/profil" element={<Profil />} />
+          <Route path="/post/:postId" element={<PostDetail />} />
+          <Route path="/login" element={<Auth />} />
+          <Route path="/signup" element={<Auth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

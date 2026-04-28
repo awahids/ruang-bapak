@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, MessageSquare, ThumbsUp, Share, MoreHorizontal, Bookmark } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Avatar } from "./Avatar";
 import type { FeedItem } from "@/data/ruang-bapak";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, index }: PostCardProps) {
+  const navigate = useNavigate();
   const [safe, setSafe] = useState(false);
   const [count, setCount] = useState(post.safe);
 
@@ -19,11 +21,16 @@ export function PostCard({ post, index }: PostCardProps) {
     setCount((c) => (safe ? c - 1 : c + 1));
   };
 
+  const openDetail = () => {
+    navigate(`/post/${post.id}`, { state: { post } });
+  };
+
   return (
     <motion.article
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
+      onClick={openDetail}
       className="group flex w-full cursor-pointer gap-4 border-b border-border/40 bg-surface px-4 py-4 transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.015] sm:px-6"
     >
       <div className="shrink-0">
@@ -39,7 +46,10 @@ export function PostCard({ post, index }: PostCardProps) {
             )}
             <span className="truncate text-sm text-muted-foreground">@{post.initials.toLowerCase()}bapak · {post.time}</span>
           </div>
-          <button className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary">
+          <button
+            onClick={(event) => event.stopPropagation()}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary"
+          >
             <MoreHorizontal size={16} />
           </button>
         </header>
@@ -47,7 +57,13 @@ export function PostCard({ post, index }: PostCardProps) {
         <p className="mt-1 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{post.text}</p>
 
         <footer className="mt-3 flex max-w-md items-center justify-between">
-          <button className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary">
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              openDetail();
+            }}
+            className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">
               <MessageSquare size={17} strokeWidth={2} />
             </div>
@@ -70,14 +86,20 @@ export function PostCard({ post, index }: PostCardProps) {
             <span className="text-xs">{count}</span>
           </button>
 
-          <button className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary">
+          <button
+            onClick={(event) => event.stopPropagation()}
+            className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">
               <Share size={17} strokeWidth={2} />
             </div>
             <span className="text-xs">{post.support}</span>
           </button>
 
-          <button className="group flex items-center text-muted-foreground transition-colors hover:text-primary">
+          <button
+            onClick={(event) => event.stopPropagation()}
+            className="group flex items-center text-muted-foreground transition-colors hover:text-primary"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">
               <Bookmark size={17} strokeWidth={2} />
             </div>
