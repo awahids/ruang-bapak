@@ -3,7 +3,7 @@ import { Flame, Clock, TrendingUp, UserCheck, SlidersHorizontal } from "lucide-r
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { icon: Flame, label: "Lagi Anget Nih" },
+  { icon: Flame, label: "Lagi Anget" },
   { icon: Clock, label: "Baru Nongol" },
   { icon: TrendingUp, label: "Lagi Rame" },
   { icon: UserCheck, label: "Kawan Akrab" },
