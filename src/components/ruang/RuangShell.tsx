@@ -23,7 +23,10 @@ export function RuangShell({ children }: RuangShellProps) {
         </div>
 
         {/* Center Feed */}
-        <main id="feed-content" className="min-h-screen min-w-0 flex-1 border-x border-border/40 bg-surface">
+        <main
+          id="feed-content"
+          className="min-h-screen min-w-0 flex-1 border-x border-border/40 bg-surface pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+        >
           <div className="flex flex-col">
             {children}
           </div>

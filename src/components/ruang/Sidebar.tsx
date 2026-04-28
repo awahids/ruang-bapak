@@ -92,15 +92,15 @@ export function Sidebar() {
 
         {/* Post Button */}
         <div className="mt-4 px-2">
-          <button className="flex w-full items-center justify-center gap-3 rounded-full bg-gradient-sage py-3.5 text-lg font-bold text-primary-foreground shadow-lift transition-transform hover:scale-[1.02] active:scale-[0.98]">
+          <Link to="/aman-pak" className="flex w-full items-center justify-center gap-3 rounded-full bg-gradient-sage py-3.5 text-lg font-bold text-primary-foreground shadow-lift transition-transform hover:scale-[1.02] active:scale-[0.98]">
             <PenLine size={20} strokeWidth={2.5} />
             <span className="hidden lg:inline">Absen Pak</span>
-          </button>
+          </Link>
         </div>
       </div>
 
       {/* User Profile */}
-      <Link to="/login" className="mt-auto flex items-center gap-3 rounded-full p-3 transition-colors hover:bg-muted/50">
+      <Link to="/profil" className="mt-auto flex items-center gap-3 rounded-full p-3 transition-colors hover:bg-muted/50">
         <Avatar initials="AP" color="hsl(28 33% 41%)" size={40} />
         <div className="hidden flex-1 text-left lg:block">
           <p className="text-sm font-bold leading-none text-foreground">Ari Pratama</p>

@@ -9,6 +9,7 @@ import { AbsenPakCard } from "./AbsenPakCard";
 
 interface FeedPageProps {
   pageKey: FeedPageKey;
+  renderHeader?: () => React.ReactNode;
 }
 
 const contextByMode: Record<ComposerMode, FeedItem["context"]> = {
@@ -31,7 +32,7 @@ const fallbackTagByMode: Record<ComposerMode, { tag: string; tone: FeedItem["tag
   profil: { tag: "Update Profil", tone: "sage" },
 };
 
-export function FeedPage({ pageKey }: FeedPageProps) {
+export function FeedPage({ pageKey, renderHeader }: FeedPageProps) {
   const config = feedPageConfigs[pageKey];
   const [activeTab, setActiveTab] = useState(0);
   const [items, setItems] = useState<FeedItem[]>(() => [...config.initialItems]);
@@ -89,10 +90,12 @@ export function FeedPage({ pageKey }: FeedPageProps) {
           <h1 className="text-xl font-bold tracking-tight text-foreground">{config.title}</h1>
         </header>
 
-        {pageKey === "aman-pak" && (
-          <div className="border-b border-border/40 bg-surface px-4 py-4 sm:px-6">
-            <AbsenPakCard />
-          </div>
+        {renderHeader ? renderHeader() : (
+          pageKey === "aman-pak" && (
+            <div className="border-b border-border/40 bg-surface px-4 py-4 sm:px-6">
+              <AbsenPakCard />
+            </div>
+          )
         )}
 
         <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} />
