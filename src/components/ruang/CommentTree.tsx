@@ -49,7 +49,7 @@ function ReplyGroup({ replies, depth, ...props }: Omit<CommentTreeProps, "commen
   const path = points.length ? `M1 0 V${last - 8} Q1 ${last} 9 ${last} H23` : "";
 
   return (
-    <div ref={containerRef} role="group" aria-label={`Balasan tingkat ${depth}`} className="relative ml-3 border-l border-border/60 pl-3 sm:ml-5 sm:pl-5">
+    <div ref={containerRef} role="group" aria-label={`Balasan tingkat ${depth}`} className={`relative border-l border-border/60 ${depth > 4 ? "ml-0 pl-2 sm:ml-2 sm:pl-3" : "ml-3 pl-3 sm:ml-5 sm:pl-5"}`}>
       {points.length > 0 && (
         <svg aria-hidden="true" className="pointer-events-none absolute left-[-1px] top-0 overflow-visible text-primary/50" width="24" height={last + 2} viewBox={`0 0 24 ${last + 2}`} fill="none">
           <motion.path d={path} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" initial={reduceMotion ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.45 }} />
