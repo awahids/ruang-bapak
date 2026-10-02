@@ -40,7 +40,7 @@ function ReplyBranch({ replies }: { replies: PostReply[] }) {
   }, [replies]);
 
   const last = points[points.length - 1] ?? 0;
-  const path = points.length ? `M1 0 V${last - 8} Q1 ${last} 9 ${last} H23 ${last}` : "";
+  const path = points.length ? `M1 0 V${last - 8} Q1 ${last} 9 ${last} H23` : "";
 
   return (
     <div ref={containerRef} role="group" aria-label="Balasan" className="relative ml-5 border-l border-border/60 pl-5 sm:ml-6 sm:pl-6">
