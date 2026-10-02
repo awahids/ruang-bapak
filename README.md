@@ -24,7 +24,7 @@ npm run dev
 ## Menyiapkan Supabase
 
 1. Buat project baru di Supabase.
-2. Jalankan migration di `supabase/migrations/` — lewat **SQL Editor** (tempel isi file lalu Run) atau `supabase db push` dengan Supabase CLI.
+2. Jalankan semua migration di `supabase/migrations/` **berurutan sesuai nama file** — lewat **SQL Editor** (tempel isi tiap file lalu Run) atau `supabase db push` dengan Supabase CLI. Migration aman dipasang di project yang sudah punya pengguna: akun lama otomatis dibuatkan profil.
 3. Salin **Project URL** dan **anon/publishable key** (Project Settings → API) ke `.env`:
 
    ```sh
@@ -32,8 +32,9 @@ npm run dev
    VITE_SUPABASE_ANON_KEY=...
    ```
 
-4. Di **Authentication → URL Configuration**, set *Site URL* ke alamat aplikasi (mis. `http://localhost:8080` saat development) agar tautan konfirmasi email kembali ke aplikasi.
-5. (Opsional) Aktifkan provider **Google** di **Authentication → Providers** agar tombol "Google" berfungsi.
+4. Di **Authentication → URL Configuration**, tambahkan alamat aplikasi (mis. `http://localhost:8080` dan domain Vercel) ke *Redirect URLs* agar tautan konfirmasi email dan login Google kembali ke aplikasi. Jika project Supabase dipakai bersama aplikasi lain, jangan ubah *Site URL*; cukup tambahkan ke *Redirect URLs*.
+5. Untuk deploy (mis. Vercel), isi `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di environment variables hosting lalu deploy ulang — variabel `VITE_*` dibaca saat build.
+6. (Opsional) Aktifkan provider **Google** di **Authentication → Providers** agar tombol "Google" berfungsi.
 
 Secara default Supabase meminta konfirmasi email setelah daftar; matikan *Confirm email* di **Authentication → Providers → Email** jika ingin pengguna langsung masuk.
 
