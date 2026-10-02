@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, CheckCircle2, CornerDownRight, MessageSquareText, Send, ThumbsUp } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MessageSquareText, Send, ThumbsUp } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Avatar } from "@/components/ruang/Avatar";
+import { CommentTree } from "@/components/ruang/CommentTree";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { TagPill } from "@/components/ruang/TagPill";
 import { Button } from "@/components/ui/button";
@@ -221,10 +222,6 @@ const PostDetail = () => {
 
         <section className="border-b border-border/40 bg-surface px-4 py-5 sm:px-6">
           <h2 className="text-base font-bold text-foreground">Komentar</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Thread komentar mendukung balasan bersarang sampai level 2.
-          </p>
-
           <form onSubmit={handleSubmitComment} className="mt-4 space-y-3">
             <Textarea
               value={commentDraft}
@@ -249,95 +246,14 @@ const PostDetail = () => {
               <p className="mt-1 text-sm text-muted-foreground">Jadi yang pertama kasih dukungan, Pak.</p>
             </div>
           ) : (
-            <div className="divide-y divide-border/40">
-              {comments.map((comment) => (
-                <article key={comment.id} className="py-4">
-                  <div className="flex gap-3">
-                    <Avatar initials={comment.initials} color={comment.color} size={40} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <h3 className="text-sm font-semibold text-foreground">{comment.author}</h3>
-                        {comment.verified && <CheckCircle2 size={13} className="text-primary" strokeWidth={3} />}
-                        <span className="text-xs text-muted-foreground">
-                          @{comment.initials.toLowerCase()}bapak · {comment.time}
-                        </span>
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{comment.text}</p>
-
-                      <div className="mt-2 flex items-center gap-4">
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <ThumbsUp size={13} />
-                          {comment.support}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setReplyTargetId((current) => (current === comment.id ? null : comment.id))
-                          }
-                          className="text-xs font-semibold text-primary transition-colors hover:text-primary/80"
-                        >
-                          Balas
-                        </button>
-                      </div>
-
-                      {replyTargetId === comment.id && (
-                        <form
-                          onSubmit={(event) => handleSubmitReply(event, comment.id)}
-                          className="mt-3 rounded-xl border border-border/50 bg-muted/40 p-3"
-                        >
-                          <Textarea
-                            value={replyDrafts[comment.id] ?? ""}
-                            onChange={(event) =>
-                              setReplyDrafts((previous) => ({ ...previous, [comment.id]: event.target.value }))
-                            }
-                            placeholder="Tulis balasan..."
-                            rows={2}
-                            className="resize-none bg-background"
-                          />
-                          <div className="mt-3 flex justify-end">
-                            <Button type="submit" size="sm" className="gap-2">
-                              <Send size={13} />
-                              Balasan
-                            </Button>
-                          </div>
-                        </form>
-                      )}
-
-                      {comment.replies.length > 0 && (
-                        <div className="mt-3 space-y-3 border-l border-border/50 pl-4">
-                          {comment.replies.map((reply) => (
-                            <div key={reply.id} className="rounded-xl bg-muted/35 p-3">
-                              <div className="flex gap-2.5">
-                                <div className="pt-1 text-muted-foreground">
-                                  <CornerDownRight size={13} />
-                                </div>
-                                <Avatar initials={reply.initials} color={reply.color} size={34} />
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <h4 className="text-sm font-semibold text-foreground">{reply.author}</h4>
-                                    {reply.verified && <CheckCircle2 size={12} className="text-primary" strokeWidth={3} />}
-                                    <span className="text-xs text-muted-foreground">
-                                      @{reply.initials.toLowerCase()}bapak · {reply.time}
-                                    </span>
-                                  </div>
-                                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-                                    {reply.text}
-                                  </p>
-                                  <span className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                                    <ThumbsUp size={12} />
-                                    {reply.support}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <CommentTree
+              comments={comments}
+              replyTargetId={replyTargetId}
+              replyDrafts={replyDrafts}
+              onToggleReply={(id) => setReplyTargetId((current) => current === id ? null : id)}
+              onReplyDraftChange={(id, value) => setReplyDrafts((previous) => ({ ...previous, [id]: value }))}
+              onSubmitReply={handleSubmitReply}
+            />
           )}
         </section>
       </div>
