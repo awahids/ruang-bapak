@@ -111,7 +111,6 @@ const PostDetail = () => {
       support: 0,
       verified: true,
       replies: [],
-      replies: [],
     };
 
     nextCommentIdRef.current += 1;
@@ -137,6 +136,7 @@ const PostDetail = () => {
       text: nextText,
       support: 0,
       verified: true,
+      replies: [],
     };
 
     nextCommentIdRef.current += 1;
