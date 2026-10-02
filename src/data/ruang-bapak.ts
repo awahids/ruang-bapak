@@ -57,6 +57,11 @@ export type FeedItem = {
   reply: number;
   support: number;
   verified?: boolean;
+  /** Username shown after "@"; falls back to the initials-based demo handle. */
+  handle?: string;
+  liked?: boolean;
+  isMine?: boolean;
+  anonymous?: boolean;
 };
 
 export type FeedPageConfig = {

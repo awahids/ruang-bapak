@@ -1,87 +1,58 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, CheckCircle2, MessageSquareText, Send, ThumbsUp } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { ArrowLeft, CheckCircle2, Loader2, MessageSquareText, Send, ThumbsUp } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ruang/Avatar";
 import { CommentTree } from "@/components/ruang/CommentTree";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { TagPill } from "@/components/ruang/TagPill";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getPostComments, type PostComment, type PostReply } from "@/data/post-detail";
-import { getFeedItemById, type FeedItem } from "@/data/ruang-bapak";
+import type { PostReply } from "@/data/post-detail";
+import type { FeedItem } from "@/data/ruang-bapak";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { usePostDetail } from "@/hooks/use-social";
+import { describeError, displayHandle } from "@/lib/social";
 
 type PostDetailLocationState = {
   post?: FeedItem;
 };
 
-const getNextCommentId = (items: PostComment[]): number => {
-  let maxId = 0;
-
-  const visit = (nodes: PostReply[]) => {
-    for (const node of nodes) {
-      maxId = Math.max(maxId, node.id);
-      visit(node.replies);
-    }
-  };
-
-  visit(items);
-
-  return maxId + 1;
-};
-
 const countCommentNodes = (items: PostReply[]): number =>
   items.reduce((sum, item) => sum + 1 + countCommentNodes(item.replies), 0);
-
-const appendReply = (items: PostReply[], parentId: number, reply: PostReply): PostReply[] =>
-  items.map((item) => {
-    if (item.id === parentId) {
-      return { ...item, replies: [...item.replies, reply] };
-    }
-
-    return { ...item, replies: appendReply(item.replies, parentId, reply) };
-  });
 
 const PostDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { postId } = useParams();
+  const requireAuth = useRequireAuth();
 
   const parsedPostId = Number(postId);
   const locationState = location.state as PostDetailLocationState | null;
 
-  const post = useMemo(() => {
-    if (Number.isNaN(parsedPostId)) {
-      return undefined;
-    }
+  const { post, isLoading, comments, addComment } = usePostDetail(parsedPostId, locationState?.post);
 
-    if (locationState?.post?.id === parsedPostId) {
-      return locationState.post;
-    }
-
-    return getFeedItemById(parsedPostId);
-  }, [locationState?.post, parsedPostId]);
-
-  const [comments, setComments] = useState<PostComment[]>([]);
   const [commentDraft, setCommentDraft] = useState("");
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
-  const nextCommentIdRef = useRef(1);
+  const [sending, setSending] = useState(false);
 
-  const totalComments = useMemo(() => countCommentNodes(comments), [comments]);
+  const totalComments = countCommentNodes(comments);
 
-  useEffect(() => {
-    if (!post) {
-      setComments([]);
-      return;
+  const sendComment = async (text: string, parentId: number | null) => {
+    if (sending || !requireAuth()) return false;
+
+    setSending(true);
+    try {
+      await addComment(text, parentId);
+      return true;
+    } catch (error) {
+      toast.error("Komentar gagal dikirim", { description: describeError(error) });
+      return false;
+    } finally {
+      setSending(false);
     }
-
-    const initialComments = getPostComments(post);
-    setComments(initialComments);
-    nextCommentIdRef.current = getNextCommentId(initialComments);
-    setCommentDraft("");
-    setReplyTargetId(null);
-    setReplyDrafts({});
-  }, [post]);
+  };
 
   const goBack = () => {
     if (window.history.length > 1) {
@@ -92,7 +63,7 @@ const PostDetail = () => {
     navigate("/");
   };
 
-  const handleSubmitComment = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextText = commentDraft.trim();
@@ -101,24 +72,12 @@ const PostDetail = () => {
       return;
     }
 
-    const nextComment: PostComment = {
-      id: nextCommentIdRef.current,
-      author: "Ari Pratama",
-      initials: "AP",
-      color: "hsl(28 33% 41%)",
-      time: "Baru saja",
-      text: nextText,
-      support: 0,
-      verified: true,
-      replies: [],
-    };
-
-    nextCommentIdRef.current += 1;
-    setComments((previous) => [nextComment, ...previous]);
-    setCommentDraft("");
+    if (await sendComment(nextText, null)) {
+      setCommentDraft("");
+    }
   };
 
-  const handleSubmitReply = (event: FormEvent<HTMLFormElement>, parentId: number) => {
+  const handleSubmitReply = async (event: FormEvent<HTMLFormElement>, parentId: number) => {
     event.preventDefault();
 
     const nextText = (replyDrafts[parentId] ?? "").trim();
@@ -127,25 +86,21 @@ const PostDetail = () => {
       return;
     }
 
-    const nextReply: PostReply = {
-      id: nextCommentIdRef.current,
-      author: "Ari Pratama",
-      initials: "AP",
-      color: "hsl(28 33% 41%)",
-      time: "Baru saja",
-      text: nextText,
-      support: 0,
-      verified: true,
-      replies: [],
-    };
-
-    nextCommentIdRef.current += 1;
-
-    setComments((previous) => appendReply(previous, parentId, nextReply));
-
-    setReplyDrafts((previous) => ({ ...previous, [parentId]: "" }));
-    setReplyTargetId(null);
+    if (await sendComment(nextText, parentId)) {
+      setReplyDrafts((previous) => ({ ...previous, [parentId]: "" }));
+      setReplyTargetId(null);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <RuangShell>
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+          <Loader2 className="animate-spin" aria-label="Memuat postingan" />
+        </div>
+      </RuangShell>
+    );
+  }
 
   if (!post) {
     return (
@@ -195,10 +150,16 @@ const PostDetail = () => {
             <Avatar initials={post.initials} color={post.color} size={52} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <h1 className="truncate text-lg font-bold text-foreground">{post.name}</h1>
+                <h1 className="truncate text-lg font-bold text-foreground">
+                  {post.handle && !post.anonymous ? (
+                    <Link to={`/u/${post.handle}`} className="hover:underline">{post.name}</Link>
+                  ) : (
+                    post.name
+                  )}
+                </h1>
                 {post.verified && <CheckCircle2 size={15} className="text-primary" strokeWidth={3} />}
                 <span className="truncate text-sm text-muted-foreground">
-                  @{post.initials.toLowerCase()}bapak · {post.time}
+                  @{displayHandle(post)} · {post.time}
                 </span>
               </div>
 
@@ -233,7 +194,7 @@ const PostDetail = () => {
               className="resize-none"
             />
             <div className="flex justify-end">
-              <Button type="submit" size="sm" className="gap-2">
+              <Button type="submit" size="sm" className="gap-2" disabled={sending}>
                 <Send size={14} />
                 Komentar
               </Button>

@@ -1,6 +1,5 @@
 import { Avatar } from "./Avatar";
-import { BadgeCheck, Calendar, MapPin, Link as LinkIcon, Settings } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BadgeCheck, Calendar, MapPin, Settings } from "lucide-react";
 
 interface ProfileHeaderProps {
   name: string;
@@ -12,9 +11,25 @@ interface ProfileHeaderProps {
     label: string;
     value: string;
   }[];
+  location?: string;
+  joinedLabel?: string;
+  verified?: boolean;
+  /** Shows the "Edit Profil" button when provided. */
+  onEdit?: () => void;
 }
 
-export function ProfileHeader({ name, handle, initials, color, bio, stats }: ProfileHeaderProps) {
+export function ProfileHeader({
+  name,
+  handle,
+  initials,
+  color,
+  bio,
+  stats,
+  location = "Jakarta Selatan",
+  joinedLabel = "Bergabung Maret 2024",
+  verified = true,
+  onEdit,
+}: ProfileHeaderProps) {
   return (
     <div className="flex flex-col border-b border-border/40 bg-surface">
       {/* Banner Placeholder */}
@@ -27,36 +42,45 @@ export function ProfileHeader({ name, handle, initials, color, bio, stats }: Pro
         </div>
 
         {/* Action Button */}
-        <div className="flex justify-end pt-3">
-          <button className="flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-bold transition-colors hover:bg-muted/50">
-            <Settings size={16} />
-            <span>Edit Profil</span>
-          </button>
+        <div className="flex min-h-[3.25rem] justify-end pt-3">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-bold transition-colors hover:bg-muted/50"
+            >
+              <Settings size={16} />
+              <span>Edit Profil</span>
+            </button>
+          )}
         </div>
 
         {/* User Info */}
         <div className="mt-8 sm:mt-10">
           <div className="flex items-center gap-1.5">
             <h2 className="text-xl font-black tracking-tight text-foreground sm:text-2xl">{name}</h2>
-            <BadgeCheck size={20} className="text-accent fill-accent text-accent-foreground" />
+            {verified && <BadgeCheck size={20} className="text-accent fill-accent text-accent-foreground" />}
           </div>
           <p className="text-muted-foreground">@{handle}</p>
         </div>
 
         {/* Bio */}
-        <p className="mt-3 text-sm leading-relaxed text-foreground sm:text-base">
-          {bio}
-        </p>
+        {bio && (
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-base">
+            {bio}
+          </p>
+        )}
 
         {/* Meta */}
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <MapPin size={16} />
-            <span>Jakarta Selatan</span>
-          </div>
+          {location && (
+            <div className="flex items-center gap-1">
+              <MapPin size={16} />
+              <span>{location}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <Calendar size={16} />
-            <span>Bergabung Maret 2024</span>
+            <span>{joinedLabel}</span>
           </div>
         </div>
 

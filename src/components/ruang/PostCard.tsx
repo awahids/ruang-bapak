@@ -1,28 +1,72 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, MessageSquare, ThumbsUp, Share, MoreHorizontal, Bookmark } from "lucide-react";
+import { CheckCircle2, MessageSquare, ThumbsUp, Share, MoreHorizontal, Bookmark, Trash2, Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar } from "./Avatar";
 import type { FeedItem } from "@/data/ruang-bapak";
+import { displayHandle } from "@/lib/social";
 import { cn } from "@/lib/utils";
 
 interface PostCardProps {
   post: FeedItem;
   index: number;
+  /** Persists the "aman" reaction; resolves to false to roll back the optimistic toggle. */
+  onToggleLike?: (post: FeedItem, liked: boolean) => Promise<boolean>;
+  onDelete?: (post: FeedItem) => void;
 }
 
-export function PostCard({ post, index }: PostCardProps) {
+export function PostCard({ post, index, onToggleLike, onDelete }: PostCardProps) {
   const navigate = useNavigate();
-  const [safe, setSafe] = useState(false);
+  const [safe, setSafe] = useState(post.liked ?? false);
   const [count, setCount] = useState(post.safe);
+  const [pending, setPending] = useState(false);
 
-  const toggleSafe = () => {
-    setSafe(!safe);
-    setCount((c) => (safe ? c - 1 : c + 1));
+  useEffect(() => {
+    setSafe(post.liked ?? false);
+    setCount(post.safe);
+  }, [post.liked, post.safe]);
+
+  const toggleSafe = async () => {
+    if (pending) return;
+
+    const next = !safe;
+    setSafe(next);
+    setCount((c) => (next ? c + 1 : c - 1));
+
+    if (!onToggleLike) return;
+
+    setPending(true);
+    const saved = await onToggleLike(post, next);
+    setPending(false);
+
+    if (!saved) {
+      setSafe(!next);
+      setCount((c) => (next ? c - 1 : c + 1));
+    }
   };
 
   const openDetail = () => {
     navigate(`/post/${post.id}`, { state: { post } });
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+      toast.success("Tautan postingan disalin");
+    } catch {
+      toast.error("Tautan gagal disalin");
+    }
+  };
+
+  const openAuthor = () => {
+    if (post.handle && !post.anonymous) navigate(`/u/${post.handle}`);
   };
 
   return (
@@ -40,18 +84,49 @@ export function PostCard({ post, index }: PostCardProps) {
       <div className="min-w-0 flex-1">
         <header className="flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-1.5 overflow-hidden">
-            <h3 className="truncate text-[15px] font-bold text-foreground hover:underline">{post.name}</h3>
+            <h3
+              onClick={(event) => {
+                if (!post.handle || post.anonymous) return;
+                event.stopPropagation();
+                openAuthor();
+              }}
+              className="truncate text-[15px] font-bold text-foreground hover:underline"
+            >
+              {post.name}
+            </h3>
             {post.verified && (
               <CheckCircle2 size={14} className="text-primary" strokeWidth={3} />
             )}
-            <span className="truncate text-sm text-muted-foreground">@{post.initials.toLowerCase()}bapak · {post.time}</span>
+            <span className="truncate text-sm text-muted-foreground">@{displayHandle(post)} · {post.time}</span>
           </div>
-          <button
-            onClick={(event) => event.stopPropagation()}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary"
-          >
-            <MoreHorizontal size={16} />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                onClick={(event) => event.stopPropagation()}
+                aria-label="Opsi postingan"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+              <DropdownMenuItem onSelect={copyLink}>
+                <Link2 size={14} className="mr-2" />
+                Salin tautan
+              </DropdownMenuItem>
+              {post.isMine && onDelete && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    if (window.confirm("Hapus postingan ini?")) onDelete(post);
+                  }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Hapus postingan
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         <p className="mt-1 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{post.text}</p>
@@ -71,7 +146,7 @@ export function PostCard({ post, index }: PostCardProps) {
           </button>
 
           <button 
-            onClick={(e) => { e.stopPropagation(); toggleSafe(); }}
+            onClick={(e) => { e.stopPropagation(); void toggleSafe(); }}
             className={cn(
               "group flex items-center gap-2 transition-colors",
               safe ? "text-accent" : "text-muted-foreground hover:text-accent"
@@ -87,7 +162,11 @@ export function PostCard({ post, index }: PostCardProps) {
           </button>
 
           <button
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              void copyLink();
+            }}
+            aria-label="Bagikan postingan"
             className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">

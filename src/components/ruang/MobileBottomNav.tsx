@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, X } from "lucide-react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { LogIn, LogOut, MoreHorizontal, X } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
 
 export function MobileBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { enabled, user, signOut } = useAuth();
   const [openMore, setOpenMore] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -184,6 +188,34 @@ export function MobileBottomNav() {
                   </Link>
                 );
               })}
+
+              {enabled && (user ? (
+                <button
+                  onClick={async () => {
+                    setOpenMore(false);
+                    await signOut();
+                    toast("Sampai jumpa lagi, Pak!");
+                    navigate("/");
+                  }}
+                  className="flex min-h-12 items-center gap-3 rounded-2xl bg-muted/70 px-3 py-2.5 text-left text-destructive transition-colors hover:bg-muted"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-card shadow-soft">
+                    <LogOut size={17} strokeWidth={2.2} />
+                  </span>
+                  <span className="text-sm font-semibold">Keluar</span>
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setOpenMore(false)}
+                  className="flex min-h-12 items-center gap-3 rounded-2xl bg-primary px-3 py-2.5 text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-foreground shadow-soft">
+                    <LogIn size={17} strokeWidth={2.2} />
+                  </span>
+                  <span className="text-sm font-semibold">Masuk / Daftar</span>
+                </Link>
+              ))}
             </div>
           </section>
         </div>
