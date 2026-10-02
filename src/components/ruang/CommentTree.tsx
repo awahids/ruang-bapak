@@ -15,7 +15,12 @@ type CommentTreeProps = {
   onSubmitReply: (event: FormEvent<HTMLFormElement>, id: number) => void;
 };
 
-function ReplyBranch({ replies }: { replies: PostReply[] }) {
+type CommentNodeProps = Omit<CommentTreeProps, "comments"> & {
+  comment: PostReply;
+  depth: number;
+};
+
+function ReplyGroup({ replies, depth, ...props }: Omit<CommentTreeProps, "comments"> & { replies: PostReply[]; depth: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [points, setPoints] = useState<number[]>([]);
   const reduceMotion = useReducedMotion();
@@ -26,8 +31,9 @@ function ReplyBranch({ replies }: { replies: PostReply[] }) {
 
     const measure = () => {
       const top = container.getBoundingClientRect().top;
-      setPoints(Array.from(container.children).filter((child) => child instanceof HTMLElement).map((child) => {
-        const avatar = child.querySelector("[data-reply-avatar]");
+      const children = Array.from(container.children).filter((child): child is HTMLElement => child instanceof HTMLElement);
+      setPoints(children.map((child) => {
+        const avatar = child.querySelector<HTMLElement>(":scope > div [data-node-avatar]");
         const rect = (avatar ?? child).getBoundingClientRect();
         return rect.top - top + rect.height / 2;
       }));
@@ -43,7 +49,7 @@ function ReplyBranch({ replies }: { replies: PostReply[] }) {
   const path = points.length ? `M1 0 V${last - 8} Q1 ${last} 9 ${last} H23` : "";
 
   return (
-    <div ref={containerRef} role="group" aria-label="Balasan" className="relative ml-5 border-l border-border/60 pl-5 sm:ml-6 sm:pl-6">
+    <div ref={containerRef} role="group" aria-label={`Balasan tingkat ${depth}`} className="relative ml-3 border-l border-border/60 pl-3 sm:ml-5 sm:pl-5">
       {points.length > 0 && (
         <svg aria-hidden="true" className="pointer-events-none absolute left-[-1px] top-0 overflow-visible text-primary/50" width="24" height={last + 2} viewBox={`0 0 24 ${last + 2}`} fill="none">
           <motion.path d={path} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" initial={reduceMotion ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.45 }} />
@@ -53,36 +59,17 @@ function ReplyBranch({ replies }: { replies: PostReply[] }) {
         </svg>
       )}
       {replies.map((reply) => (
-        <article key={reply.id} className="relative py-3 first:pt-2 last:pb-1">
-          <div className="flex min-w-0 gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-muted/40">
-            <div data-reply-avatar className="shrink-0"><Avatar initials={reply.initials} color={reply.color} size={34} /></div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <h4 className="text-sm font-semibold text-foreground">{reply.author}</h4>
-                {reply.verified && <CheckCircle2 size={12} className="text-primary" strokeWidth={3} />}
-                <span className="text-xs text-muted-foreground">@{reply.initials.toLowerCase()}bapak · {reply.time}</span>
-              </div>
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">{reply.text}</p>
-              <span className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground"><ThumbsUp size={12} />{reply.support}</span>
-            </div>
-          </div>
-        </article>
+        <CommentNode key={reply.id} comment={reply} depth={depth} {...props} />
       ))}
     </div>
   );
 }
 
-function CommentBranch({ comment, replyTargetId, replyDraft, onToggleReply, onReplyDraftChange, onSubmitReply }: {
-  comment: PostComment;
-  replyTargetId: number | null;
-  replyDraft: string;
-  onToggleReply: (id: number) => void;
-  onReplyDraftChange: (id: number, value: string) => void;
-  onSubmitReply: (event: FormEvent<HTMLFormElement>, id: number) => void;
-}) {
+function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply, onReplyDraftChange, onSubmitReply }: CommentNodeProps) {
   const [expanded, setExpanded] = useState(true);
   const previousCount = useRef(comment.replies.length);
   const reduceMotion = useReducedMotion();
+  const isRoot = depth === 0;
 
   useEffect(() => {
     if (comment.replies.length > previousCount.current) setExpanded(true);
@@ -90,13 +77,15 @@ function CommentBranch({ comment, replyTargetId, replyDraft, onToggleReply, onRe
   }, [comment.replies.length]);
 
   return (
-    <article className="border-b border-border/40 py-4 last:border-b-0">
-      <div className="group relative flex min-w-0 gap-3 rounded-md p-1 transition-colors hover:bg-muted/30">
-        <Avatar initials={comment.initials} color={comment.color} size={40} />
+    <article className={isRoot ? "border-b border-border/40 py-4 last:border-b-0" : "relative py-3 first:pt-2 last:pb-1"}>
+      <div className="group relative flex min-w-0 gap-2.5 rounded-md p-1 transition-colors hover:bg-muted/30">
+        <div data-node-avatar className="shrink-0">
+          <Avatar initials={comment.initials} color={comment.color} size={isRoot ? 40 : 34} />
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
             <h3 className="text-sm font-semibold text-foreground">{comment.author}</h3>
-            {comment.verified && <CheckCircle2 size={13} className="text-primary" strokeWidth={3} />}
+            {comment.verified && <CheckCircle2 size={isRoot ? 13 : 12} className="text-primary" strokeWidth={3} />}
             <span className="text-xs text-muted-foreground">@{comment.initials.toLowerCase()}bapak · {comment.time}</span>
           </div>
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">{comment.text}</p>
@@ -114,7 +103,7 @@ function CommentBranch({ comment, replyTargetId, replyDraft, onToggleReply, onRe
             {replyTargetId === comment.id && (
               <motion.form initial={reduceMotion ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: reduceMotion ? 0 : 0.22 }} onSubmit={(event) => onSubmitReply(event, comment.id)} className="mt-2 overflow-hidden">
                 <div className="border-l-2 border-primary/40 pl-3">
-                  <Textarea autoFocus value={replyDraft} onChange={(event) => onReplyDraftChange(comment.id, event.target.value)} placeholder="Tulis balasan..." aria-label={`Balas ${comment.author}`} rows={2} className="resize-none bg-background" />
+                  <Textarea autoFocus value={replyDrafts[comment.id] ?? ""} onChange={(event) => onReplyDraftChange(comment.id, event.target.value)} placeholder="Tulis balasan..." aria-label={`Balas ${comment.author}`} rows={2} className="resize-none bg-background" />
                   <div className="mt-2 flex justify-end"><Button type="submit" size="sm" className="gap-2"><Send size={13} />Balasan</Button></div>
                 </div>
               </motion.form>
@@ -125,7 +114,7 @@ function CommentBranch({ comment, replyTargetId, replyDraft, onToggleReply, onRe
       <AnimatePresence initial={false}>
         {expanded && comment.replies.length > 0 && (
           <motion.div initial={reduceMotion ? false : { height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.28 }} className="overflow-hidden">
-            <ReplyBranch replies={comment.replies} />
+            <ReplyGroup replies={comment.replies} depth={depth + 1} replyTargetId={replyTargetId} replyDrafts={replyDrafts} onToggleReply={onToggleReply} onReplyDraftChange={onReplyDraftChange} onSubmitReply={onSubmitReply} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -133,12 +122,10 @@ function CommentBranch({ comment, replyTargetId, replyDraft, onToggleReply, onRe
   );
 }
 
-export function CommentTree({ comments, replyTargetId, replyDrafts, onToggleReply, onReplyDraftChange, onSubmitReply }: CommentTreeProps) {
+export function CommentTree({ comments, ...props }: CommentTreeProps) {
   return (
     <div aria-label="Percakapan komentar">
-      {comments.map((comment) => (
-        <CommentBranch key={comment.id} comment={comment} replyTargetId={replyTargetId} replyDraft={replyDrafts[comment.id] ?? ""} onToggleReply={onToggleReply} onReplyDraftChange={onReplyDraftChange} onSubmitReply={onSubmitReply} />
-      ))}
+      {comments.map((comment) => <CommentNode key={comment.id} comment={comment} depth={0} {...props} />)}
     </div>
   );
 }
