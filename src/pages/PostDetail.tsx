@@ -17,16 +17,29 @@ type PostDetailLocationState = {
 const getNextCommentId = (items: PostComment[]): number => {
   let maxId = 0;
 
-  for (const comment of items) {
-    maxId = Math.max(maxId, comment.id);
-
-    for (const reply of comment.replies) {
-      maxId = Math.max(maxId, reply.id);
+  const visit = (nodes: PostReply[]) => {
+    for (const node of nodes) {
+      maxId = Math.max(maxId, node.id);
+      visit(node.replies);
     }
-  }
+  };
+
+  visit(items);
 
   return maxId + 1;
 };
+
+const countCommentNodes = (items: PostReply[]): number =>
+  items.reduce((sum, item) => sum + 1 + countCommentNodes(item.replies), 0);
+
+const appendReply = (items: PostReply[], parentId: number, reply: PostReply): PostReply[] =>
+  items.map((item) => {
+    if (item.id === parentId) {
+      return { ...item, replies: [...item.replies, reply] };
+    }
+
+    return { ...item, replies: appendReply(item.replies, parentId, reply) };
+  });
 
 const PostDetail = () => {
   const navigate = useNavigate();
@@ -54,10 +67,7 @@ const PostDetail = () => {
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
   const nextCommentIdRef = useRef(1);
 
-  const totalComments = useMemo(
-    () => comments.reduce((sum, comment) => sum + 1 + comment.replies.length, 0),
-    [comments]
-  );
+  const totalComments = useMemo(() => countCommentNodes(comments), [comments]);
 
   useEffect(() => {
     if (!post) {
@@ -126,20 +136,12 @@ const PostDetail = () => {
       text: nextText,
       support: 0,
       verified: true,
+      replies: [],
     };
 
     nextCommentIdRef.current += 1;
 
-    setComments((previous) =>
-      previous.map((comment) =>
-        comment.id === parentId
-          ? {
-            ...comment,
-            replies: [...comment.replies, nextReply],
-          }
-          : comment
-      )
-    );
+    setComments((previous) => appendReply(previous, parentId, nextReply));
 
     setReplyDrafts((previous) => ({ ...previous, [parentId]: "" }));
     setReplyTargetId(null);

@@ -11,11 +11,11 @@ type CommentBase = {
   verified?: boolean;
 };
 
-export type PostReply = CommentBase;
-
-export type PostComment = CommentBase & {
+export type PostReply = CommentBase & {
   replies: PostReply[];
 };
+
+export type PostComment = PostReply;
 
 const commentsByPostId: Record<number, PostComment[]> = {
   101: [
@@ -37,6 +37,7 @@ const commentsByPostId: Record<number, PostComment[]> = {
           text: "Siap Pak, terima kasih. Saya cek malam ini.",
           support: 4,
           verified: true,
+          replies: [],
         },
       ],
     },
@@ -70,6 +71,7 @@ const commentsByPostId: Record<number, PostComment[]> = {
           text: "Menarik Pak, berarti dibahas rutin tiap minggu ya?",
           support: 5,
           verified: true,
+          replies: [],
         },
         {
           id: 30012,
@@ -79,17 +81,20 @@ const commentsByPostId: Record<number, PostComment[]> = {
           time: "21 menit yang lalu",
           text: "Iya Pak, biasanya Minggu malam 15 menitan.",
           support: 3,
+          replies: [],
         },
       ],
     },
   ],
 };
 
-const cloneComments = (items: PostComment[]): PostComment[] =>
-  items.map((comment) => ({
-    ...comment,
-    replies: comment.replies.map((reply) => ({ ...reply })),
+const cloneReplies = (items: PostReply[]): PostReply[] =>
+  items.map((reply) => ({
+    ...reply,
+    replies: cloneReplies(reply.replies),
   }));
+
+const cloneComments = (items: PostComment[]): PostComment[] => cloneReplies(items);
 
 const buildDefaultComments = (post: FeedItem): PostComment[] => [
   {
@@ -110,6 +115,7 @@ const buildDefaultComments = (post: FeedItem): PostComment[] => [
         text: "Terima kasih sudah saling menguatkan. Jaga ruang tetap hangat ya, Pak.",
         support: 4,
         verified: true,
+        replies: [],
       },
     ],
   },
