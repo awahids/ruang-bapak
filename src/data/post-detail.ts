@@ -9,6 +9,7 @@ type CommentBase = {
   text: string;
   support: number;
   verified?: boolean;
+  handle?: string;
 };
 
 export type PostReply = CommentBase & {

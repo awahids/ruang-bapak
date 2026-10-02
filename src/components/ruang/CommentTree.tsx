@@ -5,6 +5,7 @@ import { Avatar } from "./Avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PostComment, PostReply } from "@/data/post-detail";
+import { displayHandle } from "@/lib/social";
 
 type CommentTreeProps = {
   comments: PostComment[];
@@ -86,7 +87,7 @@ function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
             <h3 className="text-sm font-semibold text-foreground">{comment.author}</h3>
             {comment.verified && <CheckCircle2 size={isRoot ? 13 : 12} className="text-primary" strokeWidth={3} />}
-            <span className="text-xs text-muted-foreground">@{comment.initials.toLowerCase()}bapak · {comment.time}</span>
+            <span className="text-xs text-muted-foreground">@{displayHandle(comment)} · {comment.time}</span>
           </div>
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">{comment.text}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">

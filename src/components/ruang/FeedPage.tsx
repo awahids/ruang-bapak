@@ -1,5 +1,9 @@
-import { useMemo, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useFeed } from "@/hooks/use-social";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { describeError, type FeedFilter, type PostCategory } from "@/lib/social";
 import { feedPageConfigs, type ComposerMode, type FeedItem, type FeedPageKey } from "@/data/ruang-bapak";
 import { FeedComposer, type ComposerSubmitPayload } from "./FeedComposer";
 import { PostCard } from "./PostCard";
@@ -11,16 +15,18 @@ import { CheckInPost } from "./CheckInPost";
 interface FeedPageProps {
   pageKey: FeedPageKey;
   renderHeader?: () => React.ReactNode;
+  /** Overrides which posts are loaded; `null` waits (e.g. until the profile is known). */
+  feedFilter?: FeedFilter | null;
+  showComposer?: boolean;
 }
 
-const contextByMode: Record<ComposerMode, FeedItem["context"]> = {
-  status: "Curhat",
-  curhat: "Curhat",
-  diskusi: "Diskusi",
-  checkin: "Cek-in",
-  komunitas: "Komunitas",
-  pesan: "Inbox",
-  profil: "Profil",
+const categoryByMode: Record<Exclude<ComposerMode, "pesan">, PostCategory> = {
+  status: "status",
+  curhat: "curhat",
+  diskusi: "diskusi",
+  checkin: "checkin",
+  komunitas: "komunitas",
+  profil: "profil",
 };
 
 const fallbackTagByMode: Record<ComposerMode, { tag: string; tone: FeedItem["tagTone"] }> = {
@@ -33,12 +39,17 @@ const fallbackTagByMode: Record<ComposerMode, { tag: string; tone: FeedItem["tag
   profil: { tag: "Update Profil", tone: "sage" },
 };
 
-export function FeedPage({ pageKey, renderHeader }: FeedPageProps) {
+export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = true }: FeedPageProps) {
   const config = feedPageConfigs[pageKey];
   const [activeTab, setActiveTab] = useState(0);
-  const [items, setItems] = useState<FeedItem[]>(() => [...config.initialItems]);
+  const requireAuth = useRequireAuth();
 
-  const nextIdRef = useRef(Math.max(...config.initialItems.map((item) => item.id), 0) + 1);
+  const defaultFilter = useMemo<FeedFilter | null>(
+    () => (pageKey === "profil" || pageKey === "inbox" ? null : { kind: "page", pageKey }),
+    [pageKey],
+  );
+  const feed = useFeed(feedFilter === undefined ? defaultFilter : feedFilter, config.initialItems);
+  const { items } = feed;
 
   const visibleItems = useMemo(() => {
     const source = [...items];
@@ -58,29 +69,46 @@ export function FeedPage({ pageKey, renderHeader }: FeedPageProps) {
     return source;
   }, [items, activeTab]);
 
-  const handleSubmitComposer = (payload: ComposerSubmitPayload) => {
+  const handleSubmitComposer = async (payload: ComposerSubmitPayload) => {
+    if (config.composerMode === "pesan" || !requireAuth()) return false;
+
     const fallback = fallbackTagByMode[config.composerMode];
-    const nextId = nextIdRef.current;
-    nextIdRef.current += 1;
 
-    const nextItem: FeedItem = {
-      id: nextId,
-      name: payload.anonymous ? "Bapak Anonim" : "Ari Pratama",
-      initials: payload.anonymous ? "BA" : "AP",
-      color: payload.anonymous ? "hsl(205 14% 41%)" : "hsl(28 33% 41%)",
-      time: "Baru saja",
-      context: contextByMode[config.composerMode],
-      tag: payload.quickAction || fallback.tag,
-      tagTone: fallback.tone,
-      text: payload.text,
-      safe: 1,
-      reply: 0,
-      support: 0,
-      verified: !payload.anonymous,
-    };
+    try {
+      await feed.addPost({
+        category: categoryByMode[config.composerMode],
+        tag: payload.quickAction || fallback.tag,
+        tagTone: fallback.tone,
+        body: payload.text,
+        anonymous: payload.anonymous,
+      });
+      setActiveTab(0);
+      return true;
+    } catch (error) {
+      toast.error("Postingan gagal dikirim", { description: describeError(error) });
+      return false;
+    }
+  };
 
-    setItems((previous) => [nextItem, ...previous]);
-    setActiveTab(0);
+  const handleToggleLike = async (item: FeedItem, liked: boolean) => {
+    if (!requireAuth()) return false;
+
+    try {
+      await feed.toggleLike(item, liked);
+      return true;
+    } catch (error) {
+      toast.error("Gagal menyimpan dukungan", { description: describeError(error) });
+      return false;
+    }
+  };
+
+  const handleDelete = async (item: FeedItem) => {
+    try {
+      await feed.removePost(item);
+      toast.success("Postingan dihapus");
+    } catch (error) {
+      toast.error("Gagal menghapus postingan", { description: describeError(error) });
+    }
   };
 
   return (
@@ -99,18 +127,27 @@ export function FeedPage({ pageKey, renderHeader }: FeedPageProps) {
           )
         )}
 
-        <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} />
+        {showComposer && <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} />}
 
         <div className="border-b border-border/40">
           <TabBar active={activeTab} onChange={setActiveTab} />
         </div>
 
-        {visibleItems.length > 0 ? (
+        {feed.isLoading ? (
+          <div className="flex justify-center px-5 py-20 text-muted-foreground">
+            <Loader2 className="animate-spin" aria-label="Memuat postingan" />
+          </div>
+        ) : feed.error ? (
+          <div className="px-5 py-20 text-center">
+            <p className="text-lg font-bold text-foreground">Postingan belum bisa dimuat</p>
+            <p className="mt-2 text-muted-foreground">{describeError(feed.error)}</p>
+          </div>
+        ) : visibleItems.length > 0 ? (
           <div className="flex flex-col">
             {visibleItems.map((item, index) => (
               pageKey === "aman-pak" 
                 ? <CheckInPost key={item.id} item={item} />
-                : <PostCard key={item.id} post={item} index={index} />
+                : <PostCard key={item.id} post={item} index={index} onToggleLike={handleToggleLike} onDelete={handleDelete} />
             ))}
           </div>
         ) : (

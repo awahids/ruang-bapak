@@ -1,9 +1,19 @@
 import { useState } from "react";
-import { Moon, Sprout, PenLine, ChevronDown } from "lucide-react";
+import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
+import { getInitials } from "@/lib/social";
 import { Avatar } from "./Avatar";
 
 function NavItem({
@@ -99,7 +109,17 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* User Profile */}
+      <SidebarAccount />
+    </div>
+  );
+}
+
+function SidebarAccount() {
+  const { enabled, loading, user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  if (!enabled) {
+    return (
       <Link to="/profil" className="mt-auto flex items-center gap-3 rounded-full p-3 transition-colors hover:bg-muted/50">
         <Avatar initials="AP" color="hsl(28 33% 41%)" size={40} />
         <div className="hidden flex-1 text-left lg:block">
@@ -108,6 +128,54 @@ export function Sidebar() {
         </div>
         <ChevronDown size={16} className="hidden text-muted-foreground lg:block" />
       </Link>
-    </div>
+    );
+  }
+
+  if (loading) return <div className="mt-auto h-16" />;
+
+  if (!user) {
+    return (
+      <Link
+        to="/login"
+        className="mt-auto flex items-center justify-center gap-3 rounded-full border border-border py-3 text-sm font-bold text-foreground transition-colors hover:bg-muted/50"
+      >
+        <LogIn size={18} />
+        <span className="hidden lg:inline">Masuk / Daftar</span>
+      </Link>
+    );
+  }
+
+  const name = profile?.display_name ?? user.email ?? "Bapak";
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast("Sampai jumpa lagi, Pak!");
+    navigate("/");
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="mt-auto flex items-center gap-3 rounded-full p-3 text-left transition-colors hover:bg-muted/50">
+          <Avatar initials={getInitials(name)} color={profile?.avatar_color ?? "hsl(28 33% 41%)"} size={40} />
+          <div className="hidden min-w-0 flex-1 lg:block">
+            <p className="truncate text-sm font-bold leading-none text-foreground">{name}</p>
+            {profile && <p className="mt-1 truncate text-xs text-muted-foreground">@{profile.username}</p>}
+          </div>
+          <ChevronDown size={16} className="hidden text-muted-foreground lg:block" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" side="top" className="w-56">
+        <DropdownMenuItem onSelect={() => navigate("/profil")}>
+          <User size={14} className="mr-2" />
+          Profil Saya
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handleSignOut} className="text-destructive focus:text-destructive">
+          <LogOut size={14} className="mr-2" />
+          Keluar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

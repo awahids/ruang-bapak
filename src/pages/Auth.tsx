@@ -1,26 +1,116 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2, Info, MailCheck } from "lucide-react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { describeError } from "@/lib/social";
 const authMascot = "/Users/awahids/.gemini/antigravity/brain/c760892d-2580-422a-a205-6aa7afc20562/mascot_transparent_1777368185478.png";
 
+type AuthLocationState = { from?: string } | null;
+
+const inputClassName =
+  "h-12 w-full rounded-2xl bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20";
+
 export default function Auth() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { enabled, user } = useAuth();
+  const [mode, setMode] = useState<"login" | "signup">(location.pathname === "/signup" ? "signup" : "login");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [joke, setJoke] = useState("");
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
-  const handleNext = () => {
+  const redirectTo = (location.state as AuthLocationState)?.from ?? "/";
+
+  if (enabled && user) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  const switchMode = () => {
+    const nextMode = mode === "login" ? "signup" : "login";
+    setMode(nextMode);
+    setStep(1);
+    navigate(nextMode === "login" ? "/login" : "/signup", { replace: true, state: location.state });
+  };
+
+  const validateCredentials = () => {
+    if (mode === "signup" && !name.trim()) return "Nama lengkap wajib diisi, Pak.";
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return "Format email belum benar.";
+    if (password.length < 6) return "Password minimal 6 karakter.";
+    return null;
+  };
+
+  const handleNext = async (event?: FormEvent) => {
+    event?.preventDefault();
+
+    const problem = validateCredentials();
+    if (problem) {
+      toast.error(problem);
+      setStep(1);
+      return;
+    }
+
     if (mode === "signup" && step === 1) {
       setStep(2);
-    } else {
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        navigate("/");
-      }, 1500);
+      return;
     }
+
+    if (!supabase) {
+      // Demo mode: there is no backend to authenticate against.
+      navigate("/");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        toast.success("Selamat datang kembali, Pak!");
+        navigate(redirectTo, { replace: true });
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { display_name: name.trim(), joke: joke.trim() },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+
+      if (data.session) {
+        toast.success("Selamat bergabung di paguyuban, Pak!");
+        navigate(redirectTo, { replace: true });
+      } else {
+        setAwaitingConfirmation(true);
+      }
+    } catch (error) {
+      toast.error(mode === "login" ? "Gagal masuk" : "Gagal mendaftar", { description: describeError(error) });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    if (!supabase) {
+      toast("Mode demo", { description: "Login Google aktif setelah Supabase dikonfigurasi." });
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}${redirectTo}` },
+    });
+    if (error) toast.error("Gagal masuk dengan Google", { description: describeError(error) });
   };
 
   return (
@@ -63,7 +153,29 @@ export default function Auth() {
         <div className="flex w-full flex-col justify-center p-8 sm:p-12 lg:w-1/2">
           <div className="mx-auto w-full max-w-[360px]">
             <AnimatePresence mode="wait">
-              {step === 1 ? (
+              {awaitingConfirmation ? (
+                <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <MailCheck size={28} strokeWidth={2.5} />
+                  </div>
+                  <h1 className="text-3xl font-black text-foreground">Cek Email Bapak</h1>
+                  <p className="mt-2 text-muted-foreground">
+                    Kami sudah kirim tautan konfirmasi ke <span className="font-bold text-foreground">{email.trim()}</span>. Klik tautannya, lalu Bapak langsung bisa masuk.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setAwaitingConfirmation(false);
+                      setMode("login");
+                      setStep(1);
+                      navigate("/login", { replace: true, state: location.state });
+                    }}
+                    className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-soft transition-all hover:bg-primary/90"
+                  >
+                    Ke halaman masuk
+                    <ArrowRight size={18} strokeWidth={2.5} />
+                  </button>
+                </motion.div>
+              ) : step === 1 ? (
                 <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 20 }}
@@ -81,14 +193,24 @@ export default function Auth() {
                     </p>
                   </header>
 
-                  <div className="space-y-4">
+                  {!enabled && (
+                    <div className="mb-6 flex gap-2 rounded-2xl bg-accent/10 p-3 text-xs text-foreground">
+                      <Info size={16} className="mt-0.5 shrink-0 text-accent" />
+                      <span>Mode demo: backend belum dikonfigurasi, jadi akun tidak benar-benar dibuat.</span>
+                    </div>
+                  )}
+
+                  <form id="auth-credentials" onSubmit={handleNext} className="space-y-4" noValidate>
                     {mode === "signup" && (
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
                           type="text"
                           placeholder="Nama Lengkap"
-                          className="h-12 w-full rounded-2xl bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
+                          autoComplete="name"
+                          value={name}
+                          onChange={(event) => setName(event.target.value)}
+                          className={inputClassName}
                         />
                       </div>
                     )}
@@ -97,7 +219,10 @@ export default function Auth() {
                       <input
                         type="email"
                         placeholder="Email"
-                        className="h-12 w-full rounded-2xl bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        className={inputClassName}
                       />
                     </div>
                     <div className="relative">
@@ -105,13 +230,17 @@ export default function Auth() {
                       <input
                         type="password"
                         placeholder="Password"
-                        className="h-12 w-full rounded-2xl bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
+                        autoComplete={mode === "login" ? "current-password" : "new-password"}
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        className={inputClassName}
                       />
                     </div>
-                  </div>
+                  </form>
 
                   <button
-                    onClick={handleNext}
+                    type="submit"
+                    form="auth-credentials"
                     disabled={loading}
                     className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-soft transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                   >
@@ -134,7 +263,10 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <button className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-border/40 bg-white px-4 text-sm font-bold text-foreground shadow-sm transition-all hover:bg-muted/30 active:scale-[0.98]">
+                  <button
+                    type="button"
+                    onClick={signInWithGoogle}
+                    className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-border/40 bg-white px-4 text-sm font-bold text-foreground shadow-sm transition-all hover:bg-muted/30 active:scale-[0.98]">
                     <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
                       <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
                       <path d="M9 18c2.43 0 4.467-.806 5.956-2.184L12.048 13.558c-.806.54-1.836.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
@@ -147,7 +279,8 @@ export default function Auth() {
                   <p className="mt-6 text-center text-sm text-muted-foreground">
                     {mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
                     <button
-                      onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                      type="button"
+                      onClick={switchMode}
                       className="font-bold text-primary hover:underline"
                     >
                       {mode === "login" ? "Daftar di sini" : "Masuk di sini"}
@@ -173,17 +306,20 @@ export default function Auth() {
 
                   <div className="space-y-4">
                     <textarea
+                      value={joke}
+                      onChange={(event) => setJoke(event.target.value)}
+                      maxLength={280}
                       placeholder="Contoh: Sayur apa yang paling jago silat? Sayur Kol-li..."
                       className="min-h-[160px] w-full resize-none rounded-2xl bg-muted/50 p-4 text-[15px] outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
                     />
                     <div className="flex items-center gap-2 text-[13px] text-muted-foreground italic">
                       <CheckCircle2 size={14} className="text-primary" />
-                      Tenang Pak, garing itu wajib di sini.
+                      Tenang Pak, garing itu wajib di sini. Jokes ini jadi bio awal profil Bapak.
                     </div>
                   </div>
 
                   <button
-                    onClick={handleNext}
+                    onClick={() => void handleNext()}
                     disabled={loading}
                     className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-soft transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                   >

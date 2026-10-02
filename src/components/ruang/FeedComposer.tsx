@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { Image, Smile, MapPin, BarChart2, Calendar, Send } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Image, Smile, BarChart2, Send, LogIn } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { composerPresets, type ComposerMode } from "@/data/ruang-bapak";
+import { ANONYMOUS_COLOR, getInitials } from "@/lib/social";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./Avatar";
 
@@ -12,27 +15,54 @@ export type ComposerSubmitPayload = {
 
 interface FeedComposerProps {
   mode: ComposerMode;
-  onSubmit: (payload: ComposerSubmitPayload) => void;
+  /** Resolves to true when the post was saved, so the draft can be cleared. */
+  onSubmit: (payload: ComposerSubmitPayload) => Promise<boolean>;
 }
 
 export function FeedComposer({ mode, onSubmit }: FeedComposerProps) {
   const preset = composerPresets[mode];
   const [text, setText] = useState("");
   const [anonymous, setAnonymous] = useState(mode === "curhat");
+  const [submitting, setSubmitting] = useState(false);
+  const { enabled, user, profile } = useAuth();
 
-  const canSubmit = useMemo(() => text.trim().length > 0, [text]);
+  const canSubmit = useMemo(() => text.trim().length > 0 && !submitting, [text, submitting]);
 
-  const handleSubmit = () => {
+  const authorName = profile?.display_name ?? "Ari Pratama";
+  const authorInitials = anonymous ? "BA" : getInitials(authorName);
+  const authorColor = anonymous ? ANONYMOUS_COLOR : profile?.avatar_color ?? "hsl(28 33% 41%)";
+
+  const handleSubmit = async () => {
     if (!canSubmit) return;
 
-    onSubmit({
+    setSubmitting(true);
+    const saved = await onSubmit({
       text: text.trim(),
       anonymous: anonymous,
       quickAction: null,
     });
+    setSubmitting(false);
 
-    setText("");
+    if (saved) setText("");
   };
+
+  if (enabled && !user) {
+    return (
+      <div className="flex flex-col items-start gap-3 border-b border-border/40 bg-primary/5 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          <p className="font-bold text-foreground">{preset.title}</p>
+          <p className="text-sm text-muted-foreground">Masuk dulu untuk ikut posting, komentar, dan kasih dukungan.</p>
+        </div>
+        <Link
+          to="/login"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground shadow-soft transition-colors hover:bg-primary/90"
+        >
+          <LogIn size={16} />
+          Masuk / Daftar
+        </Link>
+      </div>
+    );
+  }
 
   if (mode === "checkin") {
     return (
@@ -67,7 +97,7 @@ export function FeedComposer({ mode, onSubmit }: FeedComposerProps) {
     )}>
       <div className="flex gap-4">
         <div className="shrink-0">
-          <Avatar initials={anonymous ? "BA" : "AP"} color={anonymous ? "hsl(205 14% 41%)" : "hsl(28 33% 41%)"} size={48} />
+          <Avatar initials={authorInitials} color={authorColor} size={48} />
         </div>
         
         <div className="flex-1">
