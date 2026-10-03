@@ -218,7 +218,7 @@ export function MobileBottomNav() {
                     setOpenMore(false);
                     await signOut();
                     toast("Sampai jumpa lagi, Pak!");
-                    navigate("/");
+                    navigate("/login", { replace: true });
                   }}
                   className="flex min-h-12 items-center gap-3 rounded-2xl bg-muted/70 px-3 py-2.5 text-left text-destructive transition-colors hover:bg-muted"
                 >

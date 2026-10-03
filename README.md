@@ -7,6 +7,7 @@ Aplikasi komunitas digital untuk bapak-bapak Indonesia.
 Dengan backend [Supabase](https://supabase.com) aktif, Ruang Bapak berjalan sebagai media sosial sungguhan:
 
 - **Akun**: daftar & masuk dengan email/password (opsional Google), **lupa password** lewat tautan email, profil dibuat otomatis saat daftar.
+- **Wajib masuk**: semua halaman konten (feed, profil, postingan, inbox) hanya bisa dibuka setelah login. Pengunjung yang belum masuk diarahkan ke `/login`, lalu dikembalikan ke halaman yang tadi dibukanya setelah berhasil masuk.
 - **Postingan** per ruang (Teras, Uneg-uneg, Diskusi, Aman Pak?, Paguyuban, Profil), termasuk mode **anonim** — identitas penulis disembunyikan dari pengguna lain di level database.
 - **Tag postingan**: pilih tag dari saran tiap ruang (mis. Ngopi, Ronda, Tugas Negara) atau tulis tag sendiri di kotak tulis; tag tampil di postingan dan dihitung di **Topik Hangat**.
 - **Dukungan "aman"** (like), **komentar bersarang**, dan hapus postingan milik sendiri.

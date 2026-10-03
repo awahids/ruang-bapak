@@ -155,7 +155,7 @@ function SidebarAccount() {
   const handleSignOut = async () => {
     await signOut();
     toast("Sampai jumpa lagi, Pak!");
-    navigate("/");
+    navigate("/login", { replace: true });
   };
 
   return (
