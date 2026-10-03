@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, MessageSquare, ThumbsUp, Share, MoreHorizontal, Bookmark, Trash2, Link2, Flag, Ban } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CheckCircle2, MessageSquare, ThumbsUp, MoreHorizontal, Trash2, Link2, Flag, Ban, Users, MessageCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar } from "./Avatar";
 import { TagPill } from "./TagPill";
+import { BookmarkButton, PostImage, PostPollView, ShareButton } from "./PostExtras";
+import { postUrl, whatsappShareUrl } from "@/lib/share";
+import { useCalmMode } from "@/contexts/CalmModeContext";
 import type { FeedItem } from "@/data/ruang-bapak";
 import { displayHandle } from "@/lib/social";
 import { cn } from "@/lib/utils";
@@ -28,6 +31,7 @@ interface PostCardProps {
 
 export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBlock }: PostCardProps) {
   const navigate = useNavigate();
+  const { calm } = useCalmMode();
   const [safe, setSafe] = useState(post.liked ?? false);
   const [count, setCount] = useState(post.safe);
   const [pending, setPending] = useState(false);
@@ -62,7 +66,7 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+      await navigator.clipboard.writeText(postUrl(post.id));
       toast.success("Tautan postingan disalin");
     } catch {
       toast.error("Tautan gagal disalin");
@@ -82,7 +86,7 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
       className="group flex w-full cursor-pointer gap-4 border-b border-border/40 bg-surface px-4 py-4 transition-colors hover:bg-black/[0.015] dark:hover:bg-white/[0.015] sm:px-6"
     >
       <div className="shrink-0">
-        <Avatar initials={post.initials} color={post.color} size={48} />
+        <Avatar initials={post.initials} color={post.color} src={post.avatarUrl} size={48} />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -118,6 +122,10 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
                 <Link2 size={14} className="mr-2" />
                 Salin tautan
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => window.open(whatsappShareUrl(post), "_blank", "noopener")}>
+                <MessageCircle size={14} className="mr-2" />
+                Bagikan ke WhatsApp
+              </DropdownMenuItem>
               {!post.isMine && onReport && (
                 <DropdownMenuItem onSelect={() => onReport(post)}>
                   <Flag size={14} className="mr-2" />
@@ -150,11 +158,28 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
 
         <p className="mt-1 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{post.text}</p>
 
-        {post.tag && (
-          <TagPill tone={post.tagTone} className="mt-2 px-2.5 py-1 text-[11px] hover:scale-100">
-            #{post.tag}
-          </TagPill>
-        )}
+        {post.imageUrl && <PostImage src={post.imageUrl} />}
+        {post.poll && <PostPollView postId={post.id} poll={post.poll} />}
+
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {post.tag && (
+            <Link to={`/tag/${encodeURIComponent(post.tag)}`} onClick={(event) => event.stopPropagation()} aria-label={`Lihat tag ${post.tag}`}>
+              <TagPill tone={post.tagTone} className="px-2.5 py-1 text-[11px] hover:scale-100 hover:underline">
+                #{post.tag}
+              </TagPill>
+            </Link>
+          )}
+          {post.group && (
+            <Link
+              to={`/komunitas/${post.group.slug}`}
+              onClick={(event) => event.stopPropagation()}
+              className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:underline"
+            >
+              <Users size={11} strokeWidth={2.5} />
+              {post.group.name}
+            </Link>
+          )}
+        </div>
 
         <footer className="mt-3 flex max-w-md items-center justify-between">
           <button
@@ -162,16 +187,19 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
               event.stopPropagation();
               openDetail();
             }}
+            aria-label="Komentar"
             className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">
               <MessageSquare size={17} strokeWidth={2} />
             </div>
-            <span className="text-xs">{post.reply}</span>
+            {!calm && <span className="text-xs">{post.reply}</span>}
           </button>
 
           <button 
             onClick={(e) => { e.stopPropagation(); void toggleSafe(); }}
+            aria-label={safe ? "Batal dukung" : "Dukung (aman)"}
+            aria-pressed={safe}
             className={cn(
               "group flex items-center gap-2 transition-colors",
               safe ? "text-accent" : "text-muted-foreground hover:text-accent"
@@ -183,31 +211,12 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
             )}>
               <ThumbsUp size={17} strokeWidth={safe ? 2.5 : 2} fill={safe ? "currentColor" : "none"} />
             </div>
-            <span className="text-xs">{count}</span>
+            {!calm && <span className="text-xs">{count}</span>}
           </button>
 
-          <button
-            onClick={(event) => {
-              event.stopPropagation();
-              void copyLink();
-            }}
-            aria-label="Bagikan postingan"
-            className="group flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">
-              <Share size={17} strokeWidth={2} />
-            </div>
-            <span className="text-xs">{post.support}</span>
-          </button>
+          <ShareButton post={post} />
 
-          <button
-            onClick={(event) => event.stopPropagation()}
-            className="group flex items-center text-muted-foreground transition-colors hover:text-primary"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary-soft">
-              <Bookmark size={17} strokeWidth={2} />
-            </div>
-          </button>
+          <BookmarkButton post={post} />
         </footer>
       </div>
     </motion.article>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildCommentTree, displayHandle, getInitials, MAX_TAG_LENGTH, normalizeTag } from "@/lib/social";
+import { buildCommentTree, displayHandle, getInitials, MAX_TAG_LENGTH, normalizeTag, searchPattern } from "@/lib/social";
 
-const author = { id: "u-ari", username: "ari", display_name: "Ari Pratama", avatar_color: "hsl(1 1% 1%)", verified: false };
+const author = { id: "u-ari", username: "ari", display_name: "Ari Pratama", avatar_color: "hsl(1 1% 1%)", avatar_url: null, verified: false };
 const at = (minute: number) => new Date(Date.UTC(2026, 0, 1, 0, minute)).toISOString();
 
 describe("buildCommentTree", () => {
@@ -38,5 +38,15 @@ describe("normalizeTag", () => {
     expect(normalizeTag("tugas negara", ["Ngopi", "Tugas Negara"])).toBe("Tugas Negara");
     expect(normalizeTag(" # ")).toBeNull();
     expect(normalizeTag("x".repeat(60))).toHaveLength(MAX_TAG_LENGTH);
+  });
+});
+
+describe("searchPattern", () => {
+  it("builds a safe ilike pattern from free text", () => {
+    expect(searchPattern("  ngopi  pagi ")).toBe("*ngopi pagi*");
+    expect(searchPattern("kopi,(hitam)")).toBe("*kopi hitam*");
+    expect(searchPattern("50%_off*")).toBe("*50 off*");
+    expect(searchPattern("a")).toBeNull();
+    expect(searchPattern(" , ")).toBeNull();
   });
 });

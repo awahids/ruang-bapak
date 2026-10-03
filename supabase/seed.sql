@@ -2,8 +2,8 @@
 --
 -- Fills the database with the same sample content the app shows in demo mode:
 -- 22 demo bapak, their posts in every room, comment threads, "aman" reactions,
--- follows and a few direct messages. Notifications are created by the
--- database triggers along the way.
+-- follows, Paguyuban group members and posts, and a few direct messages.
+-- Notifications are created by the database triggers along the way.
 --
 -- How to run:
 --   * Supabase CLI: runs automatically on `supabase db reset` (local only).
@@ -238,6 +238,41 @@ where pairs.always or pairs.n <= 4
 on conflict do nothing;
 
 -- ---------------------------------------------------------------------------
+-- Paguyuban: demo bapak join the default groups (from the migrations) and
+-- post a few group updates there.
+-- ---------------------------------------------------------------------------
+create temp table seed_group_posts (
+  author text not null references seed_users (key),
+  grp text not null,
+  tag text not null,
+  tone text not null,
+  body text not null,
+  age interval not null
+);
+
+insert into seed_group_posts (author, grp, tag, tone, body, age) values
+  ('bapak_otomotif', 'hobi-bengkel', 'Ganti Oli', 'clay', 'Sabtu ini saya buka garasi buat yang mau belajar ganti oli motor sendiri. Bawa oli dan kunci 12, sisanya saya siapkan.', '5 hours'),
+  ('dua_jagoan', 'hobi-bengkel', 'Oprek Motor', 'sage', 'Karburator motor tua akhirnya bersih juga. Ternyata cuma butuh sabar dan semprotan carb cleaner.', '1 day 3 hours'),
+  ('papanya_zahra', 'parenting-balita', 'GTM', 'plum', 'Anak lagi GTM tiga hari. Akhirnya mau makan setelah diajak masak bareng. Ada trik lain, Pak?', '7 hours'),
+  ('ayah_belajar', 'parenting-balita', 'Belajar Bareng', 'blue', 'Rangkuman kelas minggu lalu: validasi dulu perasaan anak, baru kasih batasan. Pelan tapi konsisten.', '2 days'),
+  ('bapak_productive', 'investor-bapak', 'Reksa Dana', 'blue', 'Pengingat: dana darurat dulu minimal 6 bulan pengeluaran, baru mulai investasi. Jangan kebalik, Pak.', '9 hours');
+
+insert into public.group_members (group_id, user_id, joined_at)
+select g.id, u.id, now() - interval '15 days'
+from seed_users u
+join public.groups g on g.slug in ('hobi-bengkel', 'parenting-balita', 'investor-bapak')
+where abs(hashtext(u.key || g.slug)) % 3 <> 0
+   or u.key in (select author from seed_group_posts gp where gp.grp = g.slug)
+on conflict do nothing;
+
+insert into public.posts (author_id, category, tag, tag_tone, body, group_id, created_at)
+select u.id, 'komunitas', gp.tag, gp.tone, gp.body, g.id, now() - gp.age
+from seed_group_posts gp
+join seed_users u on u.key = gp.author
+join public.groups g on g.slug = gp.grp
+order by gp.age desc;
+
+-- ---------------------------------------------------------------------------
 -- Direct messages (only visible to the demo accounts in each conversation).
 -- ---------------------------------------------------------------------------
 create temp table seed_messages (
@@ -272,6 +307,6 @@ join seed_users r on r.key = m.recipient
 join public.conversations c on c.user_a = least(s.id, r.id) and c.user_b = greatest(s.id, r.id)
 order by m.age desc;
 
-drop table seed_messages, seed_comments, seed_post_ids, seed_posts, seed_users;
+drop table seed_messages, seed_group_posts, seed_comments, seed_post_ids, seed_posts, seed_users;
 
 commit;

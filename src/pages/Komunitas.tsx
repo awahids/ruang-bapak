@@ -1,47 +1,75 @@
+import { useState } from "react";
+import { Loader2, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { FeedPage } from "@/components/ruang/FeedPage";
-import { Plus, Wrench, Baby, TrendingUp } from "lucide-react";
+import { CreateGroupDialog, GroupCard } from "@/components/ruang/Groups";
+import { useGroups } from "@/hooks/use-groups";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { describeError } from "@/lib/social";
 
-const communities = [
-  { id: 1, name: "Hobi Bengkel", members: "1.2k", description: "Bagi bapak yang suka oprek mesin sendiri.", icon: Wrench },
-  { id: 2, name: "Parenting Balita", members: "3.5k", description: "Tips sabar ngadepin anak GTM.", icon: Baby },
-  { id: 3, name: "Investor Bapak", members: "890", description: "Paham saham biar cicilan aman.", icon: TrendingUp },
-];
+function GroupsHeader() {
+  const { groups, isLoading, error, setMember, create } = useGroups();
+  const [showAll, setShowAll] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const requireAuth = useRequireAuth();
+  const navigate = useNavigate();
 
-const Komunitas = () => {
+  const newGroupButton = (
+    <button
+      type="button"
+      onClick={() => requireAuth() && setCreating(true)}
+      className="flex min-h-[10rem] min-w-[120px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border p-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+    >
+      <Plus size={24} />
+      <span className="text-xs font-bold">Buat Baru</span>
+    </button>
+  );
+
   return (
-    <FeedPage 
-      pageKey="komunitas" 
-      renderHeader={() => (
-        <div className="border-b border-border/40 bg-surface p-4 sm:p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Paguyuban Pilihan</h2>
-            <button className="text-xs font-bold text-primary hover:underline">Lihat Semua</button>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-            {communities.map((comm) => (
-              <div key={comm.id} className="flex min-w-[200px] flex-col rounded-2xl border border-border/60 bg-card p-4 transition-transform hover:scale-[1.02]">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                    <comm.icon size={20} />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{comm.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{comm.members} Anggota</p>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{comm.description}</p>
-                <button className="mt-4 w-full rounded-full bg-muted py-2 text-xs font-bold text-foreground transition-colors hover:bg-primary-soft hover:text-primary">Gabung</button>
-              </div>
-            ))}
-            <button className="flex min-w-[120px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border p-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
-              <Plus size={24} />
-              <span className="text-xs font-bold">Buat Baru</span>
-            </button>
-          </div>
+    <div className="border-b border-border/40 bg-surface p-4 sm:p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{showAll ? "Semua Paguyuban" : "Paguyuban Pilihan"}</h2>
+        {groups.length > 0 && (
+          <button type="button" onClick={() => setShowAll((value) => !value)} className="text-xs font-bold text-primary hover:underline">
+            {showAll ? "Tampilkan Sedikit" : `Lihat Semua (${groups.length})`}
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8 text-muted-foreground">
+          <Loader2 className="animate-spin" aria-label="Memuat paguyuban" />
+        </div>
+      ) : error ? (
+        <p className="text-sm text-muted-foreground">Paguyuban belum bisa dimuat: {describeError(error)}</p>
+      ) : showAll ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {groups.map((group) => (
+            <GroupCard key={group.id} group={group} onMembershipChange={(join) => setMember(group, join)} />
+          ))}
+          {newGroupButton}
+        </div>
+      ) : (
+        <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+          {groups.slice(0, 6).map((group) => (
+            <GroupCard key={group.id} group={group} onMembershipChange={(join) => setMember(group, join)} />
+          ))}
+          {newGroupButton}
         </div>
       )}
-    />
+
+      <CreateGroupDialog
+        open={creating}
+        onOpenChange={setCreating}
+        onCreate={async (group) => {
+          const slug = await create(group);
+          navigate(`/komunitas/${slug}`);
+        }}
+      />
+    </div>
   );
-};
+}
+
+const Komunitas = () => <FeedPage pageKey="komunitas" renderHeader={() => <GroupsHeader />} />;
 
 export default Komunitas;

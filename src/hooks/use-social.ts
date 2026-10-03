@@ -74,7 +74,7 @@ function useRemoteFeed(filter: FeedFilter | null): FeedState {
       await refresh(item.id);
     },
     removePost: async (item) => {
-      await deletePost(item.id);
+      await deletePost(item.id, item.imagePath);
       await refresh(item.id);
     },
   };
@@ -110,6 +110,8 @@ function useDemoFeed(_filter: FeedFilter | null, demoItems: FeedItem[] = []): Fe
           verified: !post.anonymous,
           isMine: true,
           anonymous: post.anonymous,
+          imageUrl: post.previewImageUrl ?? null,
+          poll: post.pollOptions?.length ? { options: post.pollOptions, counts: post.pollOptions.map(() => 0), myVote: null } : null,
         },
         ...previous,
       ]);

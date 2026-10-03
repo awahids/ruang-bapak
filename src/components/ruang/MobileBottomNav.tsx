@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { LogIn, LogOut, MoreHorizontal, ShieldCheck, X } from "lucide-react";
+import { LogIn, LogOut, Moon, MoreHorizontal, ShieldCheck, X } from "lucide-react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCalmMode } from "@/contexts/CalmModeContext";
 import { useInboxBadge } from "@/hooks/use-inbox";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
@@ -11,7 +12,9 @@ export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { enabled, user, profile, signOut } = useAuth();
-  const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
+  const { calm, toggleCalm } = useCalmMode();
+  const rawInboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
+  const inboxBadge = calm ? undefined : rawInboxBadge;
   const [openMore, setOpenMore] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -184,7 +187,7 @@ export function MobileBottomNav() {
                     <span className="flex-1 text-left">
                       <span className="block text-sm font-semibold">{item.label}</span>
                       <span className="block text-[11px] text-muted-foreground">
-                        {item.label === "Inbox" ? "Pesan & notifikasi" : "Ruang pribadi bapak"}
+                        {item.hint ?? (item.label === "Inbox" ? "Pesan & notifikasi" : "Ruang pribadi bapak")}
                       </span>
                     </span>
                     {(item.to === "/inbox" ? inboxBadge : item.badge) && (
@@ -211,6 +214,23 @@ export function MobileBottomNav() {
                   </span>
                 </Link>
               )}
+
+              <button
+                onClick={toggleCalm}
+                aria-pressed={calm}
+                className={cn(
+                  "flex min-h-12 items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
+                  calm ? "bg-primary-soft text-primary" : "bg-muted/70 text-foreground hover:bg-muted",
+                )}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-foreground shadow-soft">
+                  <Moon size={17} strokeWidth={2.2} fill={calm ? "currentColor" : "none"} />
+                </span>
+                <span className="flex-1 text-left">
+                  <span className="block text-sm font-semibold">{calm ? "Mode Rehat: Aktif" : "Mode Rehat"}</span>
+                  <span className="block text-[11px] text-muted-foreground">Sembunyikan angka dan notifikasi sejenak</span>
+                </span>
+              </button>
 
               {enabled && (user ? (
                 <button

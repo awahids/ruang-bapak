@@ -1,17 +1,24 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface AvatarProps {
   initials: string;
   color: string;
+  /** Profile photo; the initials show while it loads or if it fails. */
+  src?: string | null;
   size?: number;
   className?: string;
 }
 
-export function Avatar({ initials, color, size = 40, className }: AvatarProps) {
+export function Avatar({ initials, color, src, size = 40, className }: AvatarProps) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => setFailed(false), [src]);
+
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full font-bold text-white shadow-soft ring-2 ring-background",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold text-white shadow-soft ring-2 ring-background",
         className
       )}
       style={{
@@ -22,6 +29,16 @@ export function Avatar({ initials, color, size = 40, className }: AvatarProps) {
       }}
     >
       {initials}
+      {src && !failed && (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
     </div>
   );
 }

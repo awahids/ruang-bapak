@@ -22,6 +22,8 @@ import {
   setFollowing,
   getInitials,
   updateProfile,
+  updateAvatar,
+  removeAvatar,
   type AuthorFilter,
   type Profile,
   type ProfileUpdate,
@@ -160,6 +162,13 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
     queryFn: () => fetchProfileStats(filter),
   });
 
+  const handlePhotoChange = async (file: File | null) => {
+    if (file) await updateAvatar(profile.id, file);
+    else await removeAvatar(profile.id);
+    await refreshProfile();
+    await queryClient.invalidateQueries();
+  };
+
   const handleSave = async (changes: ProfileUpdate) => {
     await updateProfile(profile.id, changes);
     await refreshProfile();
@@ -186,6 +195,7 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
             handle={profile.username}
             initials={getInitials(profile.display_name)}
             color={profile.avatar_color}
+            avatarUrl={profile.avatar_url}
             bio={profile.bio}
             location={profile.location}
             joinedLabel={`Bergabung ${format(new Date(profile.created_at), "MMMM yyyy", { locale: localeId })}`}
@@ -215,7 +225,7 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
           />
         )}
       />
-      {isOwn && <EditProfileDialog profile={profile} open={editing} onOpenChange={setEditing} onSave={handleSave} />}
+      {isOwn && <EditProfileDialog profile={profile} open={editing} onOpenChange={setEditing} onSave={handleSave} onPhotoChange={handlePhotoChange} />}
     </>
   );
 }

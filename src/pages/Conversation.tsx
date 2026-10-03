@@ -79,7 +79,7 @@ function ConversationView({ conversationId }: { conversationId: number }) {
           <ArrowLeft size={18} />
         </button>
         <Link to={`/u/${thread.otherUsername}`} className="flex min-w-0 items-center gap-3 rounded-full pr-3 transition-colors hover:bg-muted/50">
-          <Avatar initials={thread.otherInitials} color={thread.otherColor} size={36} />
+          <Avatar initials={thread.otherInitials} color={thread.otherColor} src={thread.otherAvatarUrl} size={36} />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold leading-tight text-foreground">{thread.otherName}</p>
             <p className="truncate text-xs text-muted-foreground">@{thread.otherUsername}</p>

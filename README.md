@@ -9,7 +9,13 @@ Dengan backend [Supabase](https://supabase.com) aktif, Ruang Bapak berjalan seba
 - **Akun**: daftar & masuk dengan email/password (opsional Google), **lupa password** lewat tautan email, profil dibuat otomatis saat daftar.
 - **Wajib masuk**: semua halaman konten (feed, profil, postingan, inbox) hanya bisa dibuka setelah login. Pengunjung yang belum masuk diarahkan ke `/login`, lalu dikembalikan ke halaman yang tadi dibukanya setelah berhasil masuk.
 - **Postingan** per ruang (Teras, Uneg-uneg, Diskusi, Aman Pak?, Paguyuban, Profil), termasuk mode **anonim** — identitas penulis disembunyikan dari pengguna lain di level database.
-- **Tag postingan**: pilih tag dari saran tiap ruang (mis. Ngopi, Ronda, Tugas Negara) atau tulis tag sendiri di kotak tulis; tag tampil di postingan dan dihitung di **Topik Hangat**.
+- **Tag postingan**: pilih tag dari saran tiap ruang (mis. Ngopi, Ronda, Tugas Negara) atau tulis tag sendiri di kotak tulis; tag tampil di postingan dan dihitung di **Topik Hangat**. Klik tag untuk melihat semua postingan dengan tag itu (`/tag/<tag>`).
+- **Foto & polling**: lampirkan foto ke postingan (otomatis diperkecil, maks. 1600px; tidak tersedia untuk postingan anonim supaya identitas tetap aman), sisipkan emoji, dan buat **polling** 2–4 pilihan di ruang Diskusi.
+- **Foto profil**: foto Google dipakai otomatis; bisa diganti atau dihapus di **Edit Profil**.
+- **Simpan & bagikan**: simpan postingan ke halaman **Tersimpan** (`/tersimpan`), bagikan lewat menu bagikan HP, salin tautan, atau WhatsApp.
+- **Cari** (`/cari`): cari isi postingan, nama bapak, dan tag.
+- **Paguyuban**: grup sungguhan — gabung/keluar, buat paguyuban baru, dan halaman grup (`/komunitas/<slug>`) berisi obrolan anggota.
+- **Absen Pak** tersimpan di akun (bukan lagi di browser) dan bisa sekaligus dibagikan sebagai cek-in. **Mode Rehat** menyembunyikan angka dukungan/komentar, badge, dan notifikasi pop-up.
 - **Dukungan "aman"** (like), **komentar bersarang**, dan hapus postingan milik sendiri.
 - **Profil**: edit nama, username, bio, lokasi; halaman profil publik di `/u/<username>` dengan jumlah pengikut/mengikuti.
 - **Ikuti (follow)** bapak lain dari profilnya atau dari panel **Saran Kawan** (bapak yang aktif posting bulan ini); tab **Kawan Akrab** di tiap ruang menampilkan postingan dari bapak yang diikuti (postingan anonim tidak ikut).
@@ -31,6 +37,7 @@ npm run dev
 
 1. Buat project baru di Supabase.
 2. Jalankan semua migration di `supabase/migrations/` **berurutan sesuai nama file** — lewat **SQL Editor** (tempel isi tiap file lalu Run) atau `supabase db push` dengan Supabase CLI. Migration aman dipasang di project yang sudah punya pengguna: akun lama otomatis dibuatkan profil.
+   Migration `…009` juga membuat bucket Storage `rb-avatars` dan `rb-post-images` (publik, hanya bisa diunggah ke folder milik sendiri).
 3. Salin **Project URL** dan **anon/publishable key** (Project Settings → API) ke `.env`:
 
    ```sh

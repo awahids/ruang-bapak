@@ -5,7 +5,7 @@ import type { FeedItem } from "@/data/ruang-bapak";
 export function CheckInPost({ item }: { item: FeedItem }) {
   return (
     <div className="flex items-center gap-4 border-b border-border/40 bg-surface px-4 py-3 sm:px-6">
-      <Avatar initials={item.initials} color={item.color} size={36} />
+      <Avatar initials={item.initials} color={item.color} src={item.avatarUrl} size={36} />
       <div className="flex-1 min-w-0">
         <p className="text-sm">
           <span className="font-bold text-foreground">{item.name}</span>
