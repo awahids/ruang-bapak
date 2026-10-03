@@ -1,5 +1,5 @@
 import { Avatar } from "./Avatar";
-import { Ban, BadgeCheck, Calendar, Loader2, MapPin, Mail, Settings } from "lucide-react";
+import { Ban, BadgeCheck, Calendar, Loader2, MapPin, Mail, Settings, UserCheck, UserPlus } from "lucide-react";
 
 interface ProfileHeaderProps {
   name: string;
@@ -19,6 +19,10 @@ interface ProfileHeaderProps {
   /** Shows the "Kirim Pesan" button when provided. */
   onMessage?: () => void;
   messagePending?: boolean;
+  /** Shows the "Ikuti" / "Mengikuti" button when provided. */
+  onToggleFollow?: () => void;
+  following?: boolean;
+  followPending?: boolean;
   /** Shows the "Blokir" / "Buka Blokir" button when provided. */
   onToggleBlock?: () => void;
   blocked?: boolean;
@@ -39,6 +43,9 @@ export function ProfileHeader({
   onEdit,
   onMessage,
   messagePending = false,
+  onToggleFollow,
+  following = false,
+  followPending = false,
   onToggleBlock,
   blocked = false,
   blockPending = false,
@@ -79,6 +86,21 @@ export function ProfileHeader({
             >
               <Settings size={16} />
               <span>Edit Profil</span>
+            </button>
+          )}
+          {onToggleFollow && (
+            <button
+              onClick={onToggleFollow}
+              disabled={followPending}
+              aria-pressed={following}
+              className={
+                following
+                  ? "group flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-bold text-foreground transition-colors hover:border-destructive/40 hover:text-destructive disabled:opacity-60"
+                  : "flex h-10 items-center gap-2 rounded-full bg-foreground px-4 text-sm font-bold text-background transition-colors hover:bg-foreground/90 disabled:opacity-60"
+              }
+            >
+              {followPending ? <Loader2 size={16} className="animate-spin" /> : following ? <UserCheck size={16} /> : <UserPlus size={16} />}
+              <span>{following ? "Mengikuti" : "Ikuti"}</span>
             </button>
           )}
           {onMessage && (
@@ -128,7 +150,7 @@ export function ProfileHeader({
         )}
 
         {/* Stats */}
-        <div className="mt-4 flex gap-5">
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1">
           {stats.map((stat) => (
             <div key={stat.label} className="flex gap-1 text-sm">
               <span className="font-bold text-foreground">{stat.value}</span>

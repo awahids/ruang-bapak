@@ -12,10 +12,10 @@ import {
   sendMessage,
 } from "@/lib/inbox";
 
-// Polling keeps the inbox fresh without a realtime subscription.
-const THREAD_POLL_MS = 5_000;
-const INBOX_POLL_MS = 15_000;
-const BADGE_POLL_MS = 30_000;
+// Realtime (see use-realtime.ts) pushes new rows; polling is the fallback if that connection drops.
+const THREAD_POLL_MS = 15_000;
+const INBOX_POLL_MS = 30_000;
+const BADGE_POLL_MS = 60_000;
 
 function useSignedInUserId() {
   const { enabled, user } = useAuth();

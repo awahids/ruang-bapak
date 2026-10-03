@@ -16,7 +16,10 @@ import { blockUser, fetchBlockStatus, unblockUser } from "@/lib/moderation";
 import {
   describeError,
   fetchProfileByUsername,
+  fetchFollowStats,
+  fetchIsFollowing,
   fetchProfileStats,
+  setFollowing,
   getInitials,
   updateProfile,
   type AuthorFilter,
@@ -78,6 +81,38 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
   });
   const blockedByMe = blockStatus?.blockedByMe ?? false;
   const blockedMe = blockStatus?.blockedMe ?? false;
+
+  const [followPending, setFollowPending] = useState(false);
+
+  const { data: followStats } = useQuery({
+    queryKey: ["follow-stats", profile.id],
+    queryFn: () => fetchFollowStats(profile.id),
+  });
+
+  const { data: following = false } = useQuery({
+    queryKey: ["is-following", user?.id ?? null, profile.id],
+    queryFn: () => fetchIsFollowing(user!.id, profile.id),
+    enabled: !isOwn && Boolean(user),
+  });
+
+  const handleToggleFollow = async () => {
+    if (!requireAuth()) return;
+
+    setFollowPending(true);
+    try {
+      await setFollowing(profile.id, !following);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["is-following"] }),
+        queryClient.invalidateQueries({ queryKey: ["follow-stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["feed"] }),
+      ]);
+      toast.success(following ? `Berhenti mengikuti @${profile.username}` : `Mengikuti @${profile.username}`);
+    } catch (error) {
+      toast.error("Gagal mengubah status ikuti", { description: describeError(error) });
+    } finally {
+      setFollowPending(false);
+    }
+  };
 
   const handleToggleBlock = async () => {
     if (!requireAuth()) return;
@@ -155,12 +190,17 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
             joinedLabel={`Bergabung ${format(new Date(profile.created_at), "MMMM yyyy", { locale: localeId })}`}
             verified={profile.verified}
             stats={[
-              { label: "Dukungan", value: formatCount(stats?.support ?? 0) },
+              { label: "Pengikut", value: formatCount(followStats?.followers ?? 0) },
+              { label: "Mengikuti", value: formatCount(followStats?.following ?? 0) },
               { label: "Postingan", value: formatCount(stats?.posts ?? 0) },
+              { label: "Dukungan", value: formatCount(stats?.support ?? 0) },
             ]}
             onEdit={isOwn ? () => setEditing(true) : undefined}
             onMessage={isOwn || blockedByMe || blockedMe ? undefined : handleMessage}
             messagePending={openingChat}
+            onToggleFollow={isOwn || blockedByMe || blockedMe ? undefined : handleToggleFollow}
+            following={following}
+            followPending={followPending}
             onToggleBlock={isOwn ? undefined : handleToggleBlock}
             blocked={blockedByMe}
             blockPending={blockPending}

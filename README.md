@@ -9,8 +9,9 @@ Dengan backend [Supabase](https://supabase.com) aktif, Ruang Bapak berjalan seba
 - **Akun**: daftar & masuk dengan email/password (opsional Google), **lupa password** lewat tautan email, profil dibuat otomatis saat daftar.
 - **Postingan** per ruang (Teras, Uneg-uneg, Diskusi, Aman Pak?, Paguyuban, Profil), termasuk mode **anonim** — identitas penulis disembunyikan dari pengguna lain di level database.
 - **Dukungan "aman"** (like), **komentar bersarang**, dan hapus postingan milik sendiri.
-- **Profil**: edit nama, username, bio, lokasi; halaman profil publik di `/u/<username>`.
-- **Inbox**: pesan langsung antar bapak (tombol "Kirim Pesan" di profil) dan **notifikasi** saat postingan dapat dukungan, komentar, atau balasan. Badge Inbox menampilkan jumlah yang belum dibaca; data diperbarui berkala (polling), bukan realtime.
+- **Profil**: edit nama, username, bio, lokasi; halaman profil publik di `/u/<username>` dengan jumlah pengikut/mengikuti.
+- **Ikuti (follow)** bapak lain dari profilnya; tab **Kawan Akrab** di tiap ruang menampilkan postingan dari bapak yang diikuti (postingan anonim tidak ikut).
+- **Inbox**: pesan langsung antar bapak (tombol "Kirim Pesan" di profil) dan **notifikasi** saat postingan dapat dukungan, komentar, balasan, atau saat ada pengikut baru. Pesan dan notifikasi masuk **realtime** (Supabase Realtime), dengan polling berkala sebagai cadangan.
 - **Keamanan komunitas**: **laporkan** postingan/komentar, **blokir** pengguna (konten & notifikasinya disembunyikan, DM ditutup dua arah), dan halaman **Moderasi** (`/moderasi`) bagi moderator untuk menyembunyikan atau memulihkan konten yang dilaporkan.
 
 Tanpa konfigurasi Supabase, aplikasi otomatis berjalan dalam **mode demo** memakai data contoh (tidak ada yang tersimpan).

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useRealtimeInbox } from "@/hooks/use-realtime";
 import Index from "./pages/Index.tsx";
 import Curhat from "./pages/Curhat.tsx";
 import Diskusi from "./pages/Diskusi.tsx";
@@ -20,6 +21,11 @@ import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
+const RealtimeSync = () => {
+  useRealtimeInbox();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -27,6 +33,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <RealtimeSync />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/curhat" element={<Curhat />} />

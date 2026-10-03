@@ -1,4 +1,4 @@
-import { CornerDownRight, MessageSquare, ThumbsUp } from "lucide-react";
+import { CornerDownRight, MessageSquare, ThumbsUp, UserPlus } from "lucide-react";
 import type { ActivityNotification, InboxThread, NotificationType } from "@/lib/inbox";
 import { notificationText } from "@/lib/inbox";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,7 @@ const notificationIcon: Record<NotificationType, { icon: typeof ThumbsUp; classN
   like: { icon: ThumbsUp, className: "bg-accent-soft text-accent" },
   comment: { icon: MessageSquare, className: "bg-primary-soft text-primary" },
   reply: { icon: CornerDownRight, className: "bg-blue-soft text-blue-700" },
+  follow: { icon: UserPlus, className: "bg-primary-soft text-primary" },
 };
 
 export function NotificationRow({ notification, onOpen }: { notification: ActivityNotification; onOpen: () => void }) {

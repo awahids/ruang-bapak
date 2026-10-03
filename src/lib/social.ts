@@ -47,8 +47,12 @@ type CommentRow = {
   author: Pick<Profile, "id" | "username" | "display_name" | "avatar_color" | "verified"> | null;
 };
 
+type FeedPage = Exclude<FeedPageKey, "profil" | "inbox">;
+
 export type FeedFilter =
-  | { kind: "page"; pageKey: Exclude<FeedPageKey, "profil" | "inbox"> }
+  | { kind: "page"; pageKey: FeedPage }
+  /** Named posts from the people `followerId` follows, within one page. */
+  | { kind: "following"; pageKey: FeedPage; followerId: string }
   | { kind: "author"; authorId: string }
   | { kind: "username"; username: string };
 
@@ -134,12 +138,16 @@ function toFeedItem(row: PostFeedRow): FeedItem {
 export async function fetchFeed(filter: FeedFilter): Promise<FeedItem[]> {
   let query = client().from("posts_feed").select("*").order("created_at", { ascending: false }).limit(FEED_LIMIT);
 
-  if (filter.kind !== "page") {
+  if (filter.kind === "author" || filter.kind === "username") {
     query = query.eq(...authorColumn(filter));
-  } else if (filter.pageKey === "beranda") {
-    query = query.neq("category", "checkin");
   } else {
-    query = query.eq("category", categoryByPage[filter.pageKey]);
+    if (filter.kind === "following") {
+      const followees = await fetchFollowingIds(filter.followerId);
+      if (followees.length === 0) return [];
+      query = query.in("author_id", followees);
+    }
+
+    query = filter.pageKey === "beranda" ? query.neq("category", "checkin") : query.eq("category", categoryByPage[filter.pageKey]);
   }
 
   const { data, error } = await query;
@@ -262,6 +270,43 @@ export async function fetchProfileByUsername(username: string): Promise<Profile 
 
 export async function updateProfile(userId: string, changes: ProfileUpdate): Promise<void> {
   const { error } = await client().from("profiles").update(changes).eq("id", userId);
+  if (error) throw error;
+}
+
+export async function fetchFollowingIds(followerId: string): Promise<string[]> {
+  const { data, error } = await client().from("follows").select("followee_id").eq("follower_id", followerId);
+  if (error) throw error;
+
+  return (data as { followee_id: string }[]).map((row) => row.followee_id);
+}
+
+export async function fetchFollowStats(userId: string): Promise<{ followers: number; following: number }> {
+  const [followers, following] = await Promise.all([
+    client().from("follows").select("follower_id", { count: "exact", head: true }).eq("followee_id", userId),
+    client().from("follows").select("followee_id", { count: "exact", head: true }).eq("follower_id", userId),
+  ]);
+  if (followers.error) throw followers.error;
+  if (following.error) throw following.error;
+
+  return { followers: followers.count ?? 0, following: following.count ?? 0 };
+}
+
+export async function fetchIsFollowing(followerId: string, followeeId: string): Promise<boolean> {
+  const { count, error } = await client()
+    .from("follows")
+    .select("followee_id", { count: "exact", head: true })
+    .eq("follower_id", followerId)
+    .eq("followee_id", followeeId);
+  if (error) throw error;
+
+  return (count ?? 0) > 0;
+}
+
+export async function setFollowing(followeeId: string, follow: boolean): Promise<void> {
+  const table = client().from("follows");
+  const { error } = follow
+    ? await table.upsert({ followee_id: followeeId }, { onConflict: "follower_id,followee_id", ignoreDuplicates: true })
+    : await table.delete().eq("followee_id", followeeId);
   if (error) throw error;
 }
 

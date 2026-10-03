@@ -176,7 +176,11 @@ function NotificationList({ searchQuery }: { searchQuery: string }) {
   return (
     <>
       {visible.map((item) => (
-        <NotificationRow key={item.id} notification={item} onOpen={() => navigate(`/post/${item.postId}`)} />
+        <NotificationRow
+          key={item.id}
+          notification={item}
+          onOpen={() => navigate(item.postId === null ? `/u/${item.actorUsername}` : `/post/${item.postId}`)}
+        />
       ))}
     </>
   );

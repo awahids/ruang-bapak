@@ -25,12 +25,13 @@ export type DirectMessage = {
   time: string;
 };
 
-export type NotificationType = "like" | "comment" | "reply";
+export type NotificationType = "like" | "comment" | "reply" | "follow";
 
 export type ActivityNotification = {
   id: number;
   type: NotificationType;
-  postId: number;
+  /** Null for follow notifications, which point at the follower's profile instead. */
+  postId: number | null;
   preview: string;
   unread: boolean;
   time: string;
@@ -58,7 +59,7 @@ type ThreadRow = {
 type NotificationRow = {
   id: number;
   type: NotificationType;
-  post_id: number;
+  post_id: number | null;
   preview: string;
   read_at: string | null;
   created_at: string;
@@ -189,4 +190,5 @@ export const notificationText: Record<NotificationType, string> = {
   like: "bilang aman di postingan Bapak",
   comment: "mengomentari postingan Bapak",
   reply: "membalas komentar Bapak",
+  follow: "mulai mengikuti Bapak",
 };
