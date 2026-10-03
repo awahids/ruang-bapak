@@ -4,14 +4,22 @@ import { id as localeId } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { EditProfileDialog } from "@/components/ruang/EditProfileDialog";
 import { FeedPage } from "@/components/ruang/FeedPage";
 import { ProfileHeader } from "@/components/ruang/ProfileHeader";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { startConversation } from "@/lib/inbox";
+import { blockUser, fetchBlockStatus, unblockUser } from "@/lib/moderation";
 import {
+  describeError,
   fetchProfileByUsername,
+  fetchFollowStats,
+  fetchIsFollowing,
   fetchProfileStats,
+  setFollowing,
   getInitials,
   updateProfile,
   type AuthorFilter,
@@ -58,10 +66,88 @@ const CenteredMessage = ({ title, body }: { title?: string; body?: string }) => 
 );
 
 function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
+  const requireAuth = useRequireAuth();
+  const [blockPending, setBlockPending] = useState(false);
+
+  const { data: blockStatus } = useQuery({
+    queryKey: ["block-status", user?.id ?? null, profile.id],
+    queryFn: () => fetchBlockStatus(user!.id, profile.id),
+    enabled: !isOwn && Boolean(user),
+  });
+  const blockedByMe = blockStatus?.blockedByMe ?? false;
+  const blockedMe = blockStatus?.blockedMe ?? false;
+
+  const [followPending, setFollowPending] = useState(false);
+
+  const { data: followStats } = useQuery({
+    queryKey: ["follow-stats", profile.id],
+    queryFn: () => fetchFollowStats(profile.id),
+  });
+
+  const { data: following = false } = useQuery({
+    queryKey: ["is-following", user?.id ?? null, profile.id],
+    queryFn: () => fetchIsFollowing(user!.id, profile.id),
+    enabled: !isOwn && Boolean(user),
+  });
+
+  const handleToggleFollow = async () => {
+    if (!requireAuth()) return;
+
+    setFollowPending(true);
+    try {
+      await setFollowing(profile.id, !following);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["is-following"] }),
+        queryClient.invalidateQueries({ queryKey: ["follow-stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["feed"] }),
+        queryClient.invalidateQueries({ queryKey: ["suggestions"] }),
+      ]);
+      toast.success(following ? `Berhenti mengikuti @${profile.username}` : `Mengikuti @${profile.username}`);
+    } catch (error) {
+      toast.error("Gagal mengubah status ikuti", { description: describeError(error) });
+    } finally {
+      setFollowPending(false);
+    }
+  };
+
+  const handleToggleBlock = async () => {
+    if (!requireAuth()) return;
+    if (!blockedByMe && !window.confirm(`Blokir @${profile.username}? Postingan dan komentarnya tidak akan tampil untuk Bapak, dan kalian tidak bisa saling kirim pesan.`)) return;
+
+    setBlockPending(true);
+    try {
+      if (blockedByMe) {
+        await unblockUser(profile.id);
+        toast.success(`Blokir @${profile.username} dibuka`);
+      } else {
+        await blockUser(profile.id);
+        toast.success(`@${profile.username} diblokir`);
+      }
+      await queryClient.invalidateQueries();
+    } catch (error) {
+      toast.error("Gagal mengubah blokir", { description: describeError(error) });
+    } finally {
+      setBlockPending(false);
+    }
+  };
+
+  const handleMessage = async () => {
+    if (!requireAuth()) return;
+
+    setOpeningChat(true);
+    try {
+      const conversationId = await startConversation(profile.id);
+      navigate(`/inbox/${conversationId}`);
+    } catch (error) {
+      toast.error("Percakapan gagal dibuka", { description: describeError(error) });
+      setOpeningChat(false);
+    }
+  };
 
   // Your own profile includes your anonymous posts; other profiles only show named posts.
   const filter = useMemo<AuthorFilter>(
@@ -87,6 +173,13 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
         pageKey="profil"
         feedFilter={filter}
         showComposer={isOwn}
+        emptyState={
+          isOwn
+            ? undefined
+            : blockedByMe
+              ? { title: `Postingan @${profile.username} disembunyikan`, hint: "Buka blokir untuk melihatnya lagi." }
+              : { title: `@${profile.username} belum punya postingan`, hint: "Postingan anonim tidak ditampilkan di profil." }
+        }
         renderHeader={() => (
           <ProfileHeader
             name={profile.display_name}
@@ -98,10 +191,27 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
             joinedLabel={`Bergabung ${format(new Date(profile.created_at), "MMMM yyyy", { locale: localeId })}`}
             verified={profile.verified}
             stats={[
-              { label: "Dukungan", value: formatCount(stats?.support ?? 0) },
+              { label: "Pengikut", value: formatCount(followStats?.followers ?? 0) },
+              { label: "Mengikuti", value: formatCount(followStats?.following ?? 0) },
               { label: "Postingan", value: formatCount(stats?.posts ?? 0) },
+              { label: "Dukungan", value: formatCount(stats?.support ?? 0) },
             ]}
             onEdit={isOwn ? () => setEditing(true) : undefined}
+            onMessage={isOwn || blockedByMe || blockedMe ? undefined : handleMessage}
+            messagePending={openingChat}
+            onToggleFollow={isOwn || blockedByMe || blockedMe ? undefined : handleToggleFollow}
+            following={following}
+            followPending={followPending}
+            onToggleBlock={isOwn ? undefined : handleToggleBlock}
+            blocked={blockedByMe}
+            blockPending={blockPending}
+            notice={
+              blockedByMe
+                ? `Bapak memblokir @${profile.username}. Postingan dan komentarnya disembunyikan untuk Bapak.`
+                : blockedMe
+                  ? `@${profile.username} membatasi interaksi dengan Bapak.`
+                  : undefined
+            }
           />
         )}
       />

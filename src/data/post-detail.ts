@@ -10,6 +10,7 @@ type CommentBase = {
   support: number;
   verified?: boolean;
   handle?: string;
+  authorId?: string;
 };
 
 export type PostReply = CommentBase & {

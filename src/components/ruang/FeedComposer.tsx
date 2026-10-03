@@ -1,28 +1,115 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Image, Smile, BarChart2, Send, LogIn } from "lucide-react";
+import { Image, Smile, BarChart2, Send, LogIn, Hash, Plus, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { composerPresets, type ComposerMode } from "@/data/ruang-bapak";
-import { ANONYMOUS_COLOR, getInitials } from "@/lib/social";
+import { ANONYMOUS_COLOR, MAX_TAG_LENGTH, getInitials, normalizeTag } from "@/lib/social";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./Avatar";
 
 export type ComposerSubmitPayload = {
   text: string;
   anonymous: boolean;
+  /** Tag the member picked or typed; null falls back to the room's default tag. */
   quickAction: string | null;
 };
+
+interface TagPickerProps {
+  options: string[];
+  value: string | null;
+  onChange: (tag: string | null) => void;
+  /** Tag the post gets when nothing is picked. */
+  fallback?: string;
+}
+
+/** Tag chips for the composer: the room's suggestions plus one tag of the member's own. */
+function TagPicker({ options, value, onChange, fallback }: TagPickerProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const custom = value !== null && !options.includes(value) ? value : null;
+
+  const commitDraft = () => {
+    const tag = normalizeTag(draft, options);
+    if (tag) onChange(tag);
+    setDraft("");
+    setEditing(false);
+  };
+
+  const chipClass = (active: boolean) =>
+    cn(
+      "inline-flex h-7 items-center gap-1 rounded-full border px-3 text-xs font-semibold transition-colors",
+      active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border/60 bg-surface text-muted-foreground hover:border-primary/40 hover:text-primary",
+    );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Pilih tag">
+      <Hash size={14} className="text-muted-foreground" aria-hidden />
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={value === option}
+          onClick={() => onChange(value === option ? null : option)}
+          className={chipClass(value === option)}
+        >
+          {option}
+        </button>
+      ))}
+
+      {custom && (
+        <button type="button" aria-pressed onClick={() => onChange(null)} className={chipClass(true)} aria-label={`Hapus tag ${custom}`}>
+          {custom}
+          <X size={12} strokeWidth={3} aria-hidden />
+        </button>
+      )}
+
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          maxLength={MAX_TAG_LENGTH + 1}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitDraft();
+            } else if (event.key === "Escape") {
+              setDraft("");
+              setEditing(false);
+            }
+          }}
+          placeholder="Tulis tag, Enter"
+          aria-label="Tag lain"
+          className="h-7 w-36 rounded-full border border-primary/40 bg-surface px-3 text-xs outline-none ring-primary/20 focus:ring-2"
+        />
+      ) : (
+        <button type="button" onClick={() => setEditing(true)} className={chipClass(false)}>
+          <Plus size={12} strokeWidth={3} aria-hidden />
+          Tag lain
+        </button>
+      )}
+
+      {value === null && fallback && <span className="text-[11px] text-muted-foreground">Tanpa pilihan: {fallback}</span>}
+    </div>
+  );
+}
 
 interface FeedComposerProps {
   mode: ComposerMode;
   /** Resolves to true when the post was saved, so the draft can be cleared. */
   onSubmit: (payload: ComposerSubmitPayload) => Promise<boolean>;
+  /** Tag the post gets when the member picks none, shown as a hint. */
+  defaultTag?: string;
 }
 
-export function FeedComposer({ mode, onSubmit }: FeedComposerProps) {
+export function FeedComposer({ mode, onSubmit, defaultTag }: FeedComposerProps) {
   const preset = composerPresets[mode];
   const [text, setText] = useState("");
   const [anonymous, setAnonymous] = useState(mode === "curhat");
+  const [tag, setTag] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { enabled, user, profile } = useAuth();
 
@@ -39,11 +126,14 @@ export function FeedComposer({ mode, onSubmit }: FeedComposerProps) {
     const saved = await onSubmit({
       text: text.trim(),
       anonymous: anonymous,
-      quickAction: null,
+      quickAction: tag,
     });
     setSubmitting(false);
 
-    if (saved) setText("");
+    if (saved) {
+      setText("");
+      setTag(null);
+    }
   };
 
   if (enabled && !user) {
@@ -85,6 +175,7 @@ export function FeedComposer({ mode, onSubmit }: FeedComposerProps) {
               {preset.cta}
             </button>
           </div>
+          <TagPicker options={preset.quickActions} value={tag} onChange={setTag} fallback={defaultTag} />
         </div>
       </div>
     );
@@ -128,6 +219,10 @@ export function FeedComposer({ mode, onSubmit }: FeedComposerProps) {
             className="w-full resize-none bg-transparent pt-3 text-xl leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             rows={mode === "curhat" ? 4 : 2}
           />
+
+          <div className="mt-2">
+            <TagPicker options={preset.quickActions} value={tag} onChange={setTag} fallback={defaultTag} />
+          </div>
           
           <div className="mt-3 flex items-center justify-between border-t border-border/20 pt-3">
             <div className="flex items-center gap-1 text-primary">

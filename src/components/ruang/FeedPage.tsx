@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { blockUser, type ReportTarget } from "@/lib/moderation";
+import { useAuth } from "@/contexts/AuthContext";
 import { useFeed } from "@/hooks/use-social";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { describeError, type FeedFilter, type PostCategory } from "@/lib/social";
+import { describeError, displayHandle, type FeedFilter, type PostCategory } from "@/lib/social";
 import { feedPageConfigs, type ComposerMode, type FeedItem, type FeedPageKey } from "@/data/ruang-bapak";
 import { FeedComposer, type ComposerSubmitPayload } from "./FeedComposer";
 import { PostCard } from "./PostCard";
@@ -11,6 +15,7 @@ import { RuangShell } from "./RuangShell";
 import { TabBar } from "./TabBar";
 import { AbsenPakCard } from "./AbsenPakCard";
 import { CheckInPost } from "./CheckInPost";
+import { ReportDialog } from "./ReportDialog";
 
 interface FeedPageProps {
   pageKey: FeedPageKey;
@@ -18,6 +23,8 @@ interface FeedPageProps {
   /** Overrides which posts are loaded; `null` waits (e.g. until the profile is known). */
   feedFilter?: FeedFilter | null;
   showComposer?: boolean;
+  /** Replaces the page's default empty-state title and hint. */
+  emptyState?: { title: string; hint: string };
 }
 
 const categoryByMode: Record<Exclude<ComposerMode, "pesan">, PostCategory> = {
@@ -39,10 +46,12 @@ const fallbackTagByMode: Record<ComposerMode, { tag: string; tone: FeedItem["tag
   profil: { tag: "Update Profil", tone: "sage" },
 };
 
-export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = true }: FeedPageProps) {
+export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = true, emptyState }: FeedPageProps) {
   const config = feedPageConfigs[pageKey];
   const [activeTab, setActiveTab] = useState(0);
   const requireAuth = useRequireAuth();
+  const queryClient = useQueryClient();
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   const defaultFilter = useMemo<FeedFilter | null>(
     () => (pageKey === "profil" || pageKey === "inbox" ? null : { kind: "page", pageKey }),
@@ -51,7 +60,19 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
   const feed = useFeed(feedFilter === undefined ? defaultFilter : feedFilter, config.initialItems);
   const { items } = feed;
 
+  // "Kawan Akrab" shows posts from followed bapak on the page feeds once signed in.
+  const { enabled, user } = useAuth();
+  const followingTab = enabled && activeTab === 3 && feedFilter === undefined && defaultFilter?.kind === "page";
+  const followingFilter = useMemo<FeedFilter | null>(
+    () => (followingTab && user && defaultFilter?.kind === "page" ? { kind: "following", pageKey: defaultFilter.pageKey, followerId: user.id } : null),
+    [followingTab, user, defaultFilter],
+  );
+  const followingFeed = useFeed(followingFilter);
+  const shownFeed = followingTab ? followingFeed : feed;
+
   const visibleItems = useMemo(() => {
+    if (followingTab) return followingFeed.items;
+
     const source = [...items];
 
     if (activeTab === 1) {
@@ -67,7 +88,13 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
     }
 
     return source;
-  }, [items, activeTab]);
+  }, [items, activeTab, followingTab, followingFeed.items]);
+
+  const shownEmptyState = followingTab
+    ? user
+      ? { title: "Belum ada postingan dari kawan", hint: "Ikuti bapak lain dari profilnya, postingan mereka akan muncul di sini." }
+      : { title: "Masuk untuk melihat kawan akrab", hint: "Setelah masuk, Bapak bisa mengikuti bapak lain dan melihat postingan mereka di sini." }
+    : emptyState;
 
   const handleSubmitComposer = async (payload: ComposerSubmitPayload) => {
     if (config.composerMode === "pesan" || !requireAuth()) return false;
@@ -102,6 +129,28 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
     }
   };
 
+  const handleReport = (item: FeedItem) => {
+    if (requireAuth()) setReportTarget({ postId: item.id });
+  };
+
+  const handleBlock = async (item: FeedItem) => {
+    if (!requireAuth() || !item.authorId) return;
+    if (!window.confirm(`Blokir @${displayHandle(item)}? Postingan dan komentarnya tidak akan tampil untuk Bapak, dan kalian tidak bisa saling kirim pesan.`)) return;
+
+    if (!isSupabaseConfigured) {
+      toast("Mode demo", { description: "Blokir aktif setelah Supabase dikonfigurasi." });
+      return;
+    }
+
+    try {
+      await blockUser(item.authorId);
+      await queryClient.invalidateQueries();
+      toast.success(`@${displayHandle(item)} diblokir`, { description: "Buka profilnya kapan saja untuk membuka blokir." });
+    } catch (error) {
+      toast.error("Gagal memblokir", { description: describeError(error) });
+    }
+  };
+
   const handleDelete = async (item: FeedItem) => {
     try {
       await feed.removePost(item);
@@ -127,36 +176,37 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
           )
         )}
 
-        {showComposer && <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} />}
+        {showComposer && <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} defaultTag={fallbackTagByMode[config.composerMode].tag} />}
 
         <div className="border-b border-border/40">
           <TabBar active={activeTab} onChange={setActiveTab} />
         </div>
 
-        {feed.isLoading ? (
+        {shownFeed.isLoading ? (
           <div className="flex justify-center px-5 py-20 text-muted-foreground">
             <Loader2 className="animate-spin" aria-label="Memuat postingan" />
           </div>
-        ) : feed.error ? (
+        ) : shownFeed.error ? (
           <div className="px-5 py-20 text-center">
             <p className="text-lg font-bold text-foreground">Postingan belum bisa dimuat</p>
-            <p className="mt-2 text-muted-foreground">{describeError(feed.error)}</p>
+            <p className="mt-2 text-muted-foreground">{describeError(shownFeed.error)}</p>
           </div>
         ) : visibleItems.length > 0 ? (
           <div className="flex flex-col">
             {visibleItems.map((item, index) => (
               pageKey === "aman-pak" 
                 ? <CheckInPost key={item.id} item={item} />
-                : <PostCard key={item.id} post={item} index={index} onToggleLike={handleToggleLike} onDelete={handleDelete} />
+                : <PostCard key={item.id} post={item} index={index} onToggleLike={handleToggleLike} onDelete={handleDelete} onReport={handleReport} onBlock={handleBlock} />
             ))}
           </div>
         ) : (
           <div className="px-5 py-20 text-center">
-            <p className="text-lg font-bold text-foreground">{config.emptyState}</p>
-            <p className="mt-2 text-muted-foreground">Bapak bisa mulai dari satu kalimat yang jujur dulu.</p>
+            <p className="text-lg font-bold text-foreground">{shownEmptyState?.title ?? config.emptyState}</p>
+            <p className="mt-2 text-muted-foreground">{shownEmptyState?.hint ?? "Bapak bisa mulai dari satu kalimat yang jujur dulu."}</p>
           </div>
         )}
       </div>
+      <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />
     </RuangShell>
   );
 }

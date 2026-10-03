@@ -1,5 +1,5 @@
 import { Avatar } from "./Avatar";
-import { BadgeCheck, Calendar, MapPin, Settings } from "lucide-react";
+import { Ban, BadgeCheck, Calendar, Loader2, MapPin, Mail, Settings, UserCheck, UserPlus } from "lucide-react";
 
 interface ProfileHeaderProps {
   name: string;
@@ -16,6 +16,18 @@ interface ProfileHeaderProps {
   verified?: boolean;
   /** Shows the "Edit Profil" button when provided. */
   onEdit?: () => void;
+  /** Shows the "Kirim Pesan" button when provided. */
+  onMessage?: () => void;
+  messagePending?: boolean;
+  /** Shows the "Ikuti" / "Mengikuti" button when provided. */
+  onToggleFollow?: () => void;
+  following?: boolean;
+  followPending?: boolean;
+  /** Shows the "Blokir" / "Buka Blokir" button when provided. */
+  onToggleBlock?: () => void;
+  blocked?: boolean;
+  blockPending?: boolean;
+  notice?: string;
 }
 
 export function ProfileHeader({
@@ -29,6 +41,15 @@ export function ProfileHeader({
   joinedLabel = "Bergabung Maret 2024",
   verified = true,
   onEdit,
+  onMessage,
+  messagePending = false,
+  onToggleFollow,
+  following = false,
+  followPending = false,
+  onToggleBlock,
+  blocked = false,
+  blockPending = false,
+  notice,
 }: ProfileHeaderProps) {
   return (
     <div className="flex flex-col border-b border-border/40 bg-surface">
@@ -42,7 +63,22 @@ export function ProfileHeader({
         </div>
 
         {/* Action Button */}
-        <div className="flex min-h-[3.25rem] justify-end pt-3">
+        <div className="flex min-h-[3.25rem] flex-wrap justify-end gap-2 pt-3">
+          {onToggleBlock && (
+            <button
+              onClick={onToggleBlock}
+              disabled={blockPending}
+              aria-label={blocked ? "Buka blokir" : "Blokir"}
+              className={
+                blocked
+                  ? "flex h-10 items-center gap-2 rounded-full bg-destructive px-4 text-sm font-bold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60"
+                  : "flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive disabled:opacity-60"
+              }
+            >
+              {blockPending ? <Loader2 size={16} className="animate-spin" /> : <Ban size={16} />}
+              <span>{blocked ? "Buka Blokir" : "Blokir"}</span>
+            </button>
+          )}
           {onEdit && (
             <button
               onClick={onEdit}
@@ -50,6 +86,31 @@ export function ProfileHeader({
             >
               <Settings size={16} />
               <span>Edit Profil</span>
+            </button>
+          )}
+          {onToggleFollow && (
+            <button
+              onClick={onToggleFollow}
+              disabled={followPending}
+              aria-pressed={following}
+              className={
+                following
+                  ? "group flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-bold text-foreground transition-colors hover:border-destructive/40 hover:text-destructive disabled:opacity-60"
+                  : "flex h-10 items-center gap-2 rounded-full bg-foreground px-4 text-sm font-bold text-background transition-colors hover:bg-foreground/90 disabled:opacity-60"
+              }
+            >
+              {followPending ? <Loader2 size={16} className="animate-spin" /> : following ? <UserCheck size={16} /> : <UserPlus size={16} />}
+              <span>{following ? "Mengikuti" : "Ikuti"}</span>
+            </button>
+          )}
+          {onMessage && (
+            <button
+              onClick={onMessage}
+              disabled={messagePending}
+              className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            >
+              {messagePending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+              <span>Kirim Pesan</span>
             </button>
           )}
         </div>
@@ -84,8 +145,12 @@ export function ProfileHeader({
           </div>
         </div>
 
+        {notice && (
+          <p className="mt-4 rounded-xl bg-muted/60 px-3 py-2 text-sm text-muted-foreground">{notice}</p>
+        )}
+
         {/* Stats */}
-        <div className="mt-4 flex gap-5">
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1">
           {stats.map((stat) => (
             <div key={stat.label} className="flex gap-1 text-sm">
               <span className="font-bold text-foreground">{stat.value}</span>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, User } from "lucide-react";
+import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, ShieldCheck, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
+import { useInboxBadge } from "@/hooks/use-inbox";
 import { getInitials } from "@/lib/social";
 import { Avatar } from "./Avatar";
 
@@ -59,6 +60,8 @@ function NavItem({
 
 export function Sidebar() {
   const [tenang, setTenang] = useState(false);
+  const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
+  const { profile } = useAuth();
 
   return (
     <div className="flex h-full flex-col justify-between py-4">
@@ -87,10 +90,12 @@ export function Sidebar() {
               to={item.to}
               icon={item.icon}
               label={item.label}
-              badge={item.badge}
+              badge={item.to === "/inbox" ? inboxBadge : item.badge}
             />
           ))}
           
+          {profile?.is_moderator && <NavItem to="/moderasi" icon={ShieldCheck} label="Moderasi" />}
+
           <button
             onClick={() => setTenang((v) => !v)}
             className="group flex items-center gap-4 rounded-full px-4 py-3 text-left transition-all text-foreground hover:bg-primary-soft/50"
@@ -150,7 +155,7 @@ function SidebarAccount() {
   const handleSignOut = async () => {
     await signOut();
     toast("Sampai jumpa lagi, Pak!");
-    navigate("/");
+    navigate("/login", { replace: true });
   };
 
   return (

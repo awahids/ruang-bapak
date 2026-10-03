@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CheckCircle2, ChevronRight, Send, ThumbsUp } from "lucide-react";
+import { CheckCircle2, ChevronRight, Flag, Send, ThumbsUp } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,9 @@ type CommentTreeProps = {
   onToggleReply: (id: number) => void;
   onReplyDraftChange: (id: number, value: string) => void;
   onSubmitReply: (event: FormEvent<HTMLFormElement>, id: number) => void;
+  /** Shows "Laporkan" on other people's comments when provided. */
+  onReport?: (id: number) => void;
+  currentUserId?: string | null;
 };
 
 type CommentNodeProps = Omit<CommentTreeProps, "comments"> & {
@@ -66,7 +69,7 @@ function ReplyGroup({ replies, depth, ...props }: Omit<CommentTreeProps, "commen
   );
 }
 
-function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply, onReplyDraftChange, onSubmitReply }: CommentNodeProps) {
+function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply, onReplyDraftChange, onSubmitReply, onReport, currentUserId }: CommentNodeProps) {
   const [expanded, setExpanded] = useState(true);
   const previousCount = useRef(comment.replies.length);
   const reduceMotion = useReducedMotion();
@@ -93,6 +96,12 @@ function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1 text-muted-foreground"><ThumbsUp size={13} />{comment.support}</span>
             <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary hover:bg-primary-soft hover:text-primary" onClick={() => onToggleReply(comment.id)}>Balas</Button>
+            {onReport && comment.authorId !== currentUserId && (
+              <Button type="button" variant="ghost" size="sm" aria-label={`Laporkan komentar ${comment.author}`} className="h-7 gap-1 px-2 text-xs text-muted-foreground opacity-70 hover:bg-muted hover:text-destructive group-hover:opacity-100" onClick={() => onReport(comment.id)}>
+                <Flag size={12} />
+                Laporkan
+              </Button>
+            )}
             {comment.replies.length > 0 && (
               <Button type="button" variant="ghost" size="sm" aria-expanded={expanded} aria-label={`${expanded ? "Sembunyikan" : "Tampilkan"} ${comment.replies.length} balasan dari ${comment.author}`} className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:bg-primary-soft hover:text-primary" onClick={() => setExpanded((value) => !value)}>
                 <motion.span animate={{ rotate: expanded ? 90 : 0 }} transition={{ duration: reduceMotion ? 0 : 0.2 }}><ChevronRight size={13} /></motion.span>
@@ -115,7 +124,7 @@ function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply
       <AnimatePresence initial={false}>
         {expanded && comment.replies.length > 0 && (
           <motion.div initial={reduceMotion ? false : { height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.28 }} className="overflow-hidden">
-            <ReplyGroup replies={comment.replies} depth={depth + 1} replyTargetId={replyTargetId} replyDrafts={replyDrafts} onToggleReply={onToggleReply} onReplyDraftChange={onReplyDraftChange} onSubmitReply={onSubmitReply} />
+            <ReplyGroup replies={comment.replies} depth={depth + 1} replyTargetId={replyTargetId} replyDrafts={replyDrafts} onToggleReply={onToggleReply} onReplyDraftChange={onReplyDraftChange} onSubmitReply={onSubmitReply} onReport={onReport} currentUserId={currentUserId} />
           </motion.div>
         )}
       </AnimatePresence>

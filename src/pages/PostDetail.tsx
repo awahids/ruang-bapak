@@ -1,16 +1,19 @@
 import { useState, type FormEvent } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, MessageSquareText, Send, ThumbsUp } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Flag, Loader2, MessageSquareText, Send, ThumbsUp } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ruang/Avatar";
 import { CommentTree } from "@/components/ruang/CommentTree";
+import { ReportDialog } from "@/components/ruang/ReportDialog";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { TagPill } from "@/components/ruang/TagPill";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PostReply } from "@/data/post-detail";
 import type { FeedItem } from "@/data/ruang-bapak";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import type { ReportTarget } from "@/lib/moderation";
 import { usePostDetail } from "@/hooks/use-social";
 import { describeError, displayHandle } from "@/lib/social";
 
@@ -36,6 +39,12 @@ const PostDetail = () => {
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
   const [sending, setSending] = useState(false);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const { user } = useAuth();
+
+  const openReport = (target: ReportTarget) => {
+    if (requireAuth()) setReportTarget(target);
+  };
 
   const totalComments = countCommentNodes(comments);
 
@@ -141,7 +150,16 @@ const PostDetail = () => {
               <ArrowLeft size={16} />
               Kembali
             </button>
-            {/* <p className="text-sm font-semibold text-muted-foreground">Detail Postingan</p> */}
+            {!post.isMine && (
+              <button
+                type="button"
+                onClick={() => openReport({ postId: post.id })}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+              >
+                <Flag size={13} />
+                Laporkan
+              </button>
+            )}
           </div>
         </header>
 
@@ -216,10 +234,13 @@ const PostDetail = () => {
               onToggleReply={(id) => setReplyTargetId((current) => current === id ? null : id)}
               onReplyDraftChange={(id, value) => setReplyDrafts((previous) => ({ ...previous, [id]: value }))}
               onSubmitReply={handleSubmitReply}
+              onReport={(id) => openReport({ commentId: id })}
+              currentUserId={user?.id ?? null}
             />
           )}
         </section>
       </div>
+      <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />
     </RuangShell>
   );
 };

@@ -14,6 +14,7 @@ export type Profile = {
   location: string;
   avatar_color: string;
   verified: boolean;
+  is_moderator: boolean;
   created_at: string;
 };
 
@@ -43,11 +44,15 @@ type CommentRow = {
   parent_id: number | null;
   body: string;
   created_at: string;
-  author: Pick<Profile, "username" | "display_name" | "avatar_color" | "verified"> | null;
+  author: Pick<Profile, "id" | "username" | "display_name" | "avatar_color" | "verified"> | null;
 };
 
+type FeedPage = Exclude<FeedPageKey, "profil" | "inbox">;
+
 export type FeedFilter =
-  | { kind: "page"; pageKey: Exclude<FeedPageKey, "profil" | "inbox"> }
+  | { kind: "page"; pageKey: FeedPage }
+  /** Named posts from the people `followerId` follows, within one page. */
+  | { kind: "following"; pageKey: FeedPage; followerId: string }
   | { kind: "author"; authorId: string }
   | { kind: "username"; username: string };
 
@@ -96,6 +101,25 @@ export function getInitials(name: string): string {
   return letters.join("") || "B";
 }
 
+/** Longest tag a member can type in the composer (the database allows 40). */
+export const MAX_TAG_LENGTH = 30;
+
+/**
+ * Cleans a tag typed in the composer: drops leading "#", squeezes spaces, caps
+ * the length and capitalises each word. Reuses the spelling of a known tag that matches regardless
+ * of case, so "ngopi" and "Ngopi" count as one topic in "Topik Hangat".
+ */
+export function normalizeTag(raw: string, known: readonly string[] = []): string | null {
+  const cleaned = raw.replace(/^[#\s]+/, "").replace(/\s+/g, " ").trim().slice(0, MAX_TAG_LENGTH).trim();
+  if (!cleaned) return null;
+
+  const match = known.find((tag) => tag.toLocaleLowerCase("id-ID") === cleaned.toLocaleLowerCase("id-ID"));
+  if (match) return match;
+
+  // Capitalise each word like the preset tags ("Tugas Negara"); keeps acronyms such as "BPJS".
+  return cleaned.replace(/(^|\s)(\p{L})/gu, (_, space: string, letter: string) => space + letter.toLocaleUpperCase("id-ID"));
+}
+
 /** Handle shown after "@": the username, or the initials-based handle used by the demo data. */
 export function displayHandle(item: { handle?: string; initials: string }): string {
   return item.handle ?? `${item.initials.toLowerCase()}bapak`;
@@ -126,18 +150,23 @@ function toFeedItem(row: PostFeedRow): FeedItem {
     liked: row.liked_by_me,
     isMine: row.is_mine,
     anonymous: row.is_anonymous,
+    authorId: row.author_id,
   };
 }
 
 export async function fetchFeed(filter: FeedFilter): Promise<FeedItem[]> {
   let query = client().from("posts_feed").select("*").order("created_at", { ascending: false }).limit(FEED_LIMIT);
 
-  if (filter.kind !== "page") {
+  if (filter.kind === "author" || filter.kind === "username") {
     query = query.eq(...authorColumn(filter));
-  } else if (filter.pageKey === "beranda") {
-    query = query.neq("category", "checkin");
   } else {
-    query = query.eq("category", categoryByPage[filter.pageKey]);
+    if (filter.kind === "following") {
+      const followees = await fetchFollowingIds(filter.followerId);
+      if (followees.length === 0) return [];
+      query = query.in("author_id", followees);
+    }
+
+    query = filter.pageKey === "beranda" ? query.neq("category", "checkin") : query.eq("category", categoryByPage[filter.pageKey]);
   }
 
   const { data, error } = await query;
@@ -202,6 +231,7 @@ export function buildCommentTree(rows: CommentRow[]): PostComment[] {
       initials: getInitials(name),
       color: row.author?.avatar_color ?? ANONYMOUS_COLOR,
       handle: row.author?.username,
+      authorId: row.author?.id,
       time: formatRelativeTime(row.created_at),
       text: row.body,
       support: 0,
@@ -229,7 +259,7 @@ export function buildCommentTree(rows: CommentRow[]): PostComment[] {
 export async function fetchComments(postId: number): Promise<PostComment[]> {
   const { data, error } = await client()
     .from("comments")
-    .select("id, parent_id, body, created_at, author:profiles(username, display_name, avatar_color, verified)")
+    .select("id, parent_id, body, created_at, author:profiles(id, username, display_name, avatar_color, verified)")
     .eq("post_id", postId)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
@@ -260,6 +290,106 @@ export async function fetchProfileByUsername(username: string): Promise<Profile 
 export async function updateProfile(userId: string, changes: ProfileUpdate): Promise<void> {
   const { error } = await client().from("profiles").update(changes).eq("id", userId);
   if (error) throw error;
+}
+
+export async function fetchFollowingIds(followerId: string): Promise<string[]> {
+  const { data, error } = await client().from("follows").select("followee_id").eq("follower_id", followerId);
+  if (error) throw error;
+
+  return (data as { followee_id: string }[]).map((row) => row.followee_id);
+}
+
+export async function fetchFollowStats(userId: string): Promise<{ followers: number; following: number }> {
+  const [followers, following] = await Promise.all([
+    client().from("follows").select("follower_id", { count: "exact", head: true }).eq("followee_id", userId),
+    client().from("follows").select("followee_id", { count: "exact", head: true }).eq("follower_id", userId),
+  ]);
+  if (followers.error) throw followers.error;
+  if (following.error) throw following.error;
+
+  return { followers: followers.count ?? 0, following: following.count ?? 0 };
+}
+
+export async function fetchIsFollowing(followerId: string, followeeId: string): Promise<boolean> {
+  const { count, error } = await client()
+    .from("follows")
+    .select("followee_id", { count: "exact", head: true })
+    .eq("follower_id", followerId)
+    .eq("followee_id", followeeId);
+  if (error) throw error;
+
+  return (count ?? 0) > 0;
+}
+
+export async function setFollowing(followeeId: string, follow: boolean): Promise<void> {
+  const table = client().from("follows");
+  const { error } = follow
+    ? await table.upsert({ followee_id: followeeId }, { onConflict: "follower_id,followee_id", ignoreDuplicates: true })
+    : await table.delete().eq("followee_id", followeeId);
+  if (error) throw error;
+}
+
+export type SuggestedProfile = {
+  id: string;
+  username: string;
+  name: string;
+  initials: string;
+  color: string;
+  verified: boolean;
+  bio: string;
+  followers: number;
+  recentPosts: number;
+};
+
+/** People to follow: active members first, excluding yourself, people you follow and blocks. */
+export async function fetchSuggestedProfiles(limit: number): Promise<SuggestedProfile[]> {
+  const { data, error } = await client().rpc("suggested_profiles", { max_results: limit });
+  if (error) throw error;
+
+  return (
+    data as {
+      id: string;
+      username: string;
+      display_name: string;
+      avatar_color: string;
+      verified: boolean;
+      bio: string;
+      follower_count: number;
+      recent_post_count: number;
+    }[]
+  ).map((row) => ({
+    id: row.id,
+    username: row.username,
+    name: row.display_name,
+    initials: getInitials(row.display_name),
+    color: row.avatar_color,
+    verified: row.verified,
+    bio: row.bio,
+    followers: row.follower_count,
+    recentPosts: row.recent_post_count,
+  }));
+}
+
+export type TrendingTag = { tag: string; category: PostCategory; posts: number };
+
+/** Most used tags in the last `windowDays` days (check-ins excluded). */
+export async function fetchTrendingTags(windowDays: number, limit: number): Promise<TrendingTag[]> {
+  const { data, error } = await client().rpc("trending_tags", { window_days: windowDays, max_results: limit });
+  if (error) throw error;
+
+  return (data as { tag: string; category: PostCategory; post_count: number }[]).map((row) => ({
+    tag: row.tag,
+    category: row.category,
+    posts: row.post_count,
+  }));
+}
+
+/** Check-ins posted since midnight WIB. */
+export async function fetchCheckinsToday(): Promise<number> {
+  const { data, error } = await client().rpc("checkins_today");
+  if (error) throw error;
+
+  return data as number;
 }
 
 /** Turns Supabase/Postgres errors into short Indonesian messages for toasts. */
