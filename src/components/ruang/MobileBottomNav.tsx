@@ -3,6 +3,7 @@ import { LogIn, LogOut, MoreHorizontal, X } from "lucide-react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInboxBadge } from "@/hooks/use-inbox";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
 
@@ -10,6 +11,7 @@ export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { enabled, user, signOut } = useAuth();
+  const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
   const [openMore, setOpenMore] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -128,7 +130,12 @@ export function MobileBottomNav() {
             onClick={() => setOpenMore(true)}
             className="flex min-h-12 flex-1 flex-col items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-muted/50"
           >
-            <MoreHorizontal size={24} strokeWidth={2} />
+            <span className="relative">
+              <MoreHorizontal size={24} strokeWidth={2} />
+              {inboxBadge && enabled && (
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-surface" aria-label="Ada pesan atau notifikasi baru" />
+              )}
+            </span>
           </button>
         </div>
       </nav>
@@ -180,9 +187,9 @@ export function MobileBottomNav() {
                         {item.label === "Inbox" ? "Pesan & notifikasi" : "Ruang pribadi bapak"}
                       </span>
                     </span>
-                    {item.badge && (
+                    {(item.to === "/inbox" ? inboxBadge : item.badge) && (
                       <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
-                        {item.badge}
+                        {item.to === "/inbox" ? inboxBadge : item.badge}
                       </span>
                     )}
                   </Link>

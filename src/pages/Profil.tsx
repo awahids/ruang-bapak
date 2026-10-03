@@ -4,12 +4,16 @@ import { id as localeId } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { EditProfileDialog } from "@/components/ruang/EditProfileDialog";
 import { FeedPage } from "@/components/ruang/FeedPage";
 import { ProfileHeader } from "@/components/ruang/ProfileHeader";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { startConversation } from "@/lib/inbox";
 import {
+  describeError,
   fetchProfileByUsername,
   fetchProfileStats,
   getInitials,
@@ -62,6 +66,21 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
+  const requireAuth = useRequireAuth();
+
+  const handleMessage = async () => {
+    if (!requireAuth()) return;
+
+    setOpeningChat(true);
+    try {
+      const conversationId = await startConversation(profile.id);
+      navigate(`/inbox/${conversationId}`);
+    } catch (error) {
+      toast.error("Percakapan gagal dibuka", { description: describeError(error) });
+      setOpeningChat(false);
+    }
+  };
 
   // Your own profile includes your anonymous posts; other profiles only show named posts.
   const filter = useMemo<AuthorFilter>(
@@ -102,6 +121,8 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
               { label: "Postingan", value: formatCount(stats?.posts ?? 0) },
             ]}
             onEdit={isOwn ? () => setEditing(true) : undefined}
+            onMessage={isOwn ? undefined : handleMessage}
+            messagePending={openingChat}
           />
         )}
       />

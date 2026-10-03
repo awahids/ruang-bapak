@@ -10,6 +10,7 @@ import Diskusi from "./pages/Diskusi.tsx";
 import AmanPak from "./pages/AmanPak.tsx";
 import Komunitas from "./pages/Komunitas.tsx";
 import Inbox from "./pages/Inbox.tsx";
+import Conversation from "./pages/Conversation.tsx";
 import Profil from "./pages/Profil.tsx";
 import Auth from "./pages/Auth.tsx";
 import PostDetail from "./pages/PostDetail.tsx";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/aman-pak" element={<AmanPak />} />
             <Route path="/komunitas" element={<Komunitas />} />
             <Route path="/inbox" element={<Inbox />} />
+            <Route path="/inbox/:conversationId" element={<Conversation />} />
             <Route path="/profil" element={<Profil />} />
             <Route path="/u/:username" element={<Profil />} />
             <Route path="/post/:postId" element={<PostDetail />} />

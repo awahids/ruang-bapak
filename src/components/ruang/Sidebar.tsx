@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
+import { useInboxBadge } from "@/hooks/use-inbox";
 import { getInitials } from "@/lib/social";
 import { Avatar } from "./Avatar";
 
@@ -59,6 +60,7 @@ function NavItem({
 
 export function Sidebar() {
   const [tenang, setTenang] = useState(false);
+  const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
 
   return (
     <div className="flex h-full flex-col justify-between py-4">
@@ -87,7 +89,7 @@ export function Sidebar() {
               to={item.to}
               icon={item.icon}
               label={item.label}
-              badge={item.badge}
+              badge={item.to === "/inbox" ? inboxBadge : item.badge}
             />
           ))}
           

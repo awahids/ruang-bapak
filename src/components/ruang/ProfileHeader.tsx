@@ -1,5 +1,5 @@
 import { Avatar } from "./Avatar";
-import { BadgeCheck, Calendar, MapPin, Settings } from "lucide-react";
+import { BadgeCheck, Calendar, Loader2, MapPin, Mail, Settings } from "lucide-react";
 
 interface ProfileHeaderProps {
   name: string;
@@ -16,6 +16,9 @@ interface ProfileHeaderProps {
   verified?: boolean;
   /** Shows the "Edit Profil" button when provided. */
   onEdit?: () => void;
+  /** Shows the "Kirim Pesan" button when provided. */
+  onMessage?: () => void;
+  messagePending?: boolean;
 }
 
 export function ProfileHeader({
@@ -29,6 +32,8 @@ export function ProfileHeader({
   joinedLabel = "Bergabung Maret 2024",
   verified = true,
   onEdit,
+  onMessage,
+  messagePending = false,
 }: ProfileHeaderProps) {
   return (
     <div className="flex flex-col border-b border-border/40 bg-surface">
@@ -50,6 +55,16 @@ export function ProfileHeader({
             >
               <Settings size={16} />
               <span>Edit Profil</span>
+            </button>
+          )}
+          {onMessage && (
+            <button
+              onClick={onMessage}
+              disabled={messagePending}
+              className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            >
+              {messagePending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+              <span>Kirim Pesan</span>
             </button>
           )}
         </div>
