@@ -89,6 +89,18 @@ export default function Auth() {
       });
       if (error) throw error;
 
+      // Supabase answers a sign-up for an email that already has an account
+      // (e.g. one made with Google) with an empty identity list and sends no email.
+      if (data.user && !data.session && data.user.identities?.length === 0) {
+        toast.error("Email ini sudah terdaftar", {
+          description: "Silakan masuk. Kalau dulu daftar pakai Google, tekan tombol Google; kalau lupa password, pakai \"Lupa password?\".",
+        });
+        setMode("login");
+        setStep(1);
+        navigate("/login", { replace: true, state: location.state });
+        return;
+      }
+
       if (data.session) {
         toast.success("Selamat bergabung di paguyuban, Pak!");
         navigate(redirectTo, { replace: true });
