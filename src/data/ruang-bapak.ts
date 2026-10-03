@@ -62,6 +62,8 @@ export type FeedItem = {
   liked?: boolean;
   isMine?: boolean;
   anonymous?: boolean;
+  /** Author's user id; null for anonymous posts written by someone else. */
+  authorId?: string | null;
 };
 
 export type FeedPageConfig = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildCommentTree, displayHandle, getInitials } from "@/lib/social";
 
-const author = { username: "ari", display_name: "Ari Pratama", avatar_color: "hsl(1 1% 1%)", verified: false };
+const author = { id: "u-ari", username: "ari", display_name: "Ari Pratama", avatar_color: "hsl(1 1% 1%)", verified: false };
 const at = (minute: number) => new Date(Date.UTC(2026, 0, 1, 0, minute)).toISOString();
 
 describe("buildCommentTree", () => {
@@ -17,7 +17,7 @@ describe("buildCommentTree", () => {
     expect(tree.map((node) => node.text)).toEqual(["root 2", "root 1"]);
     expect(tree[1].replies.map((node) => node.text)).toEqual(["reply 1", "reply 2"]);
     expect(tree[1].replies[0].replies.map((node) => node.text)).toEqual(["reply 1.1"]);
-    expect(tree[0]).toMatchObject({ author: "Ari Pratama", initials: "AP", handle: "ari" });
+    expect(tree[0]).toMatchObject({ author: "Ari Pratama", initials: "AP", handle: "ari", authorId: "u-ari" });
   });
 });
 

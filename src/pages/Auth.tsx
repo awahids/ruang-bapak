@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2, Info, MailCheck } from "lucide-react";
+import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2, Info, MailCheck, KeyRound } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { describeError } from "@/lib/social";
-const authMascot = "/Users/awahids/.gemini/antigravity/brain/c760892d-2580-422a-a205-6aa7afc20562/mascot_transparent_1777368185478.png";
+import authMascot from "@/assets/bapak.png";
 
 type AuthLocationState = { from?: string } | null;
 
@@ -25,6 +25,8 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [joke, setJoke] = useState("");
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const redirectTo = (location.state as AuthLocationState)?.from ?? "/";
 
@@ -100,6 +102,33 @@ export default function Auth() {
     }
   };
 
+  const sendPasswordReset = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      toast.error("Format email belum benar.");
+      return;
+    }
+
+    if (!supabase) {
+      toast("Mode demo", { description: "Reset password aktif setelah Supabase dikonfigurasi." });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error("Gagal mengirim tautan reset", { description: describeError(error) });
+      return;
+    }
+
+    setResetSent(true);
+  };
+
   const signInWithGoogle = async () => {
     if (!supabase) {
       toast("Mode demo", { description: "Login Google aktif setelah Supabase dikonfigurasi." });
@@ -131,8 +160,8 @@ export default function Auth() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               src={authMascot}
-              alt="Mascot"
-              className="mx-auto h-[400px] w-auto object-contain"
+              alt="Maskot Ruang Bapak"
+              className="mx-auto h-[400px] w-auto rounded-[2rem] object-cover shadow-lift ring-4 ring-white/20"
             />
             <div className="mt-8 text-center text-white">
               <h2 className="text-3xl font-extrabold leading-tight">Selamat Datang, Pak!</h2>
@@ -173,6 +202,63 @@ export default function Auth() {
                   >
                     Ke halaman masuk
                     <ArrowRight size={18} strokeWidth={2.5} />
+                  </button>
+                </motion.div>
+              ) : forgotPassword ? (
+                <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    {resetSent ? <MailCheck size={28} strokeWidth={2.5} /> : <KeyRound size={28} strokeWidth={2.5} />}
+                  </div>
+                  <h1 className="text-3xl font-black text-foreground">{resetSent ? "Cek Email Bapak" : "Lupa Password?"}</h1>
+                  <p className="mt-2 text-muted-foreground">
+                    {resetSent ? (
+                      <>
+                        Kalau <span className="font-bold text-foreground">{email.trim()}</span> terdaftar, tautan untuk membuat password baru sudah dikirim. Cek juga folder spam ya, Pak.
+                      </>
+                    ) : (
+                      "Tenang Pak, masukkan email akun Bapak. Kami kirim tautan untuk membuat password baru."
+                    )}
+                  </p>
+
+                  {!resetSent && (
+                    <form onSubmit={sendPasswordReset} className="mt-8 space-y-4" noValidate>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                        <input
+                          type="email"
+                          placeholder="Email"
+                          autoComplete="email"
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
+                          className={inputClassName}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-soft transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {loading ? (
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        ) : (
+                          <>
+                            <span>Kirim Tautan Reset</span>
+                            <ArrowRight size={18} strokeWidth={2.5} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPassword(false);
+                      setResetSent(false);
+                    }}
+                    className="mt-6 w-full text-center text-sm font-bold text-muted-foreground hover:text-foreground"
+                  >
+                    Kembali ke halaman masuk
                   </button>
                 </motion.div>
               ) : step === 1 ? (
@@ -236,6 +322,17 @@ export default function Auth() {
                         className={inputClassName}
                       />
                     </div>
+                    {mode === "login" && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setForgotPassword(true)}
+                          className="text-xs font-bold text-primary hover:underline"
+                        >
+                          Lupa password?
+                        </button>
+                      </div>
+                    )}
                   </form>
 
                   <button

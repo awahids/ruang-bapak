@@ -110,24 +110,40 @@ function ConversationView({ conversationId }: { conversationId: number }) {
         <div ref={bottomRef} />
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] flex items-end gap-2 border-t border-border/40 bg-surface px-4 py-3 sm:px-6 lg:bottom-0"
-      >
-        <Textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Tulis pesan..."
-          aria-label={`Pesan untuk ${thread.otherName}`}
-          maxLength={2000}
-          rows={1}
-          className="max-h-32 min-h-10 resize-none"
-        />
-        <Button type="submit" size="icon" disabled={!draft.trim() || sending} aria-label="Kirim pesan" className="shrink-0">
-          {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-        </Button>
-      </form>
+      {thread.blockedByMe || thread.blockedMe ? (
+        <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] border-t border-border/40 bg-surface px-4 py-4 text-center text-sm text-muted-foreground sm:px-6 lg:bottom-0">
+          {thread.blockedByMe ? (
+            <>
+              Bapak memblokir {thread.otherName}.{" "}
+              <Link to={`/u/${thread.otherUsername}`} className="font-bold text-primary hover:underline">
+                Buka blokir di profilnya
+              </Link>{" "}
+              untuk kirim pesan lagi.
+            </>
+          ) : (
+            "Bapak tidak bisa membalas percakapan ini."
+          )}
+        </div>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] flex items-end gap-2 border-t border-border/40 bg-surface px-4 py-3 sm:px-6 lg:bottom-0"
+        >
+          <Textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Tulis pesan..."
+            aria-label={`Pesan untuk ${thread.otherName}`}
+            maxLength={2000}
+            rows={1}
+            className="max-h-32 min-h-10 resize-none"
+          />
+          <Button type="submit" size="icon" disabled={!draft.trim() || sending} aria-label="Kirim pesan" className="shrink-0">
+            {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

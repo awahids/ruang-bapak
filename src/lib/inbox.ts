@@ -13,6 +13,8 @@ export type InboxThread = {
   lastFromMe: boolean;
   time: string;
   unread: number;
+  blockedByMe: boolean;
+  blockedMe: boolean;
 };
 
 export type DirectMessage = {
@@ -49,6 +51,8 @@ type ThreadRow = {
   last_from_me: boolean;
   last_at: string;
   unread_count: number;
+  blocked_by_me: boolean;
+  blocked_me: boolean;
 };
 
 type NotificationRow = {
@@ -81,6 +85,8 @@ const toThread = (row: ThreadRow): InboxThread => ({
   lastFromMe: row.last_from_me,
   time: formatRelativeTime(row.last_at),
   unread: row.unread_count,
+  blockedByMe: row.blocked_by_me,
+  blockedMe: row.blocked_me,
 });
 
 export async function fetchThreads(): Promise<InboxThread[]> {

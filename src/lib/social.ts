@@ -14,6 +14,7 @@ export type Profile = {
   location: string;
   avatar_color: string;
   verified: boolean;
+  is_moderator: boolean;
   created_at: string;
 };
 
@@ -43,7 +44,7 @@ type CommentRow = {
   parent_id: number | null;
   body: string;
   created_at: string;
-  author: Pick<Profile, "username" | "display_name" | "avatar_color" | "verified"> | null;
+  author: Pick<Profile, "id" | "username" | "display_name" | "avatar_color" | "verified"> | null;
 };
 
 export type FeedFilter =
@@ -126,6 +127,7 @@ function toFeedItem(row: PostFeedRow): FeedItem {
     liked: row.liked_by_me,
     isMine: row.is_mine,
     anonymous: row.is_anonymous,
+    authorId: row.author_id,
   };
 }
 
@@ -202,6 +204,7 @@ export function buildCommentTree(rows: CommentRow[]): PostComment[] {
       initials: getInitials(name),
       color: row.author?.avatar_color ?? ANONYMOUS_COLOR,
       handle: row.author?.username,
+      authorId: row.author?.id,
       time: formatRelativeTime(row.created_at),
       text: row.body,
       support: 0,
@@ -229,7 +232,7 @@ export function buildCommentTree(rows: CommentRow[]): PostComment[] {
 export async function fetchComments(postId: number): Promise<PostComment[]> {
   const { data, error } = await client()
     .from("comments")
-    .select("id, parent_id, body, created_at, author:profiles(username, display_name, avatar_color, verified)")
+    .select("id, parent_id, body, created_at, author:profiles(id, username, display_name, avatar_color, verified)")
     .eq("post_id", postId)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });

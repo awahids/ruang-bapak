@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, MessageSquare, ThumbsUp, Share, MoreHorizontal, Bookmark, Trash2, Link2 } from "lucide-react";
+import { CheckCircle2, MessageSquare, ThumbsUp, Share, MoreHorizontal, Bookmark, Trash2, Link2, Flag, Ban } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar } from "./Avatar";
@@ -20,9 +21,11 @@ interface PostCardProps {
   /** Persists the "aman" reaction; resolves to false to roll back the optimistic toggle. */
   onToggleLike?: (post: FeedItem, liked: boolean) => Promise<boolean>;
   onDelete?: (post: FeedItem) => void;
+  onReport?: (post: FeedItem) => void;
+  onBlock?: (post: FeedItem) => void;
 }
 
-export function PostCard({ post, index, onToggleLike, onDelete }: PostCardProps) {
+export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBlock }: PostCardProps) {
   const navigate = useNavigate();
   const [safe, setSafe] = useState(post.liked ?? false);
   const [count, setCount] = useState(post.safe);
@@ -114,6 +117,21 @@ export function PostCard({ post, index, onToggleLike, onDelete }: PostCardProps)
                 <Link2 size={14} className="mr-2" />
                 Salin tautan
               </DropdownMenuItem>
+              {!post.isMine && onReport && (
+                <DropdownMenuItem onSelect={() => onReport(post)}>
+                  <Flag size={14} className="mr-2" />
+                  Laporkan postingan
+                </DropdownMenuItem>
+              )}
+              {!post.isMine && !post.anonymous && post.authorId && onBlock && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => onBlock(post)} className="text-destructive focus:text-destructive">
+                    <Ban size={14} className="mr-2" />
+                    Blokir @{displayHandle(post)}
+                  </DropdownMenuItem>
+                </>
+              )}
               {post.isMine && onDelete && (
                 <DropdownMenuItem
                   onSelect={() => {

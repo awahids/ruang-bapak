@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, User } from "lucide-react";
+import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, ShieldCheck, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -61,6 +61,7 @@ function NavItem({
 export function Sidebar() {
   const [tenang, setTenang] = useState(false);
   const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
+  const { profile } = useAuth();
 
   return (
     <div className="flex h-full flex-col justify-between py-4">
@@ -93,6 +94,8 @@ export function Sidebar() {
             />
           ))}
           
+          {profile?.is_moderator && <NavItem to="/moderasi" icon={ShieldCheck} label="Moderasi" />}
+
           <button
             onClick={() => setTenang((v) => !v)}
             className="group flex items-center gap-4 rounded-full px-4 py-3 text-left transition-all text-foreground hover:bg-primary-soft/50"

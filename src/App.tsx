@@ -11,6 +11,8 @@ import AmanPak from "./pages/AmanPak.tsx";
 import Komunitas from "./pages/Komunitas.tsx";
 import Inbox from "./pages/Inbox.tsx";
 import Conversation from "./pages/Conversation.tsx";
+import Moderasi from "./pages/Moderasi.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import Profil from "./pages/Profil.tsx";
 import Auth from "./pages/Auth.tsx";
 import PostDetail from "./pages/PostDetail.tsx";
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/post/:postId" element={<PostDetail />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/signup" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/moderasi" element={<Moderasi />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

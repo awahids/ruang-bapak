@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { LogIn, LogOut, MoreHorizontal, X } from "lucide-react";
+import { LogIn, LogOut, MoreHorizontal, ShieldCheck, X } from "lucide-react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,7 @@ import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
 export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { enabled, user, signOut } = useAuth();
+  const { enabled, user, profile, signOut } = useAuth();
   const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
   const [openMore, setOpenMore] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -195,6 +195,22 @@ export function MobileBottomNav() {
                   </Link>
                 );
               })}
+
+              {profile?.is_moderator && (
+                <Link
+                  to="/moderasi"
+                  onClick={() => setOpenMore(false)}
+                  className="flex min-h-12 items-center gap-3 rounded-2xl bg-muted/70 px-3 py-2.5 text-foreground transition-colors hover:bg-muted"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-foreground shadow-soft">
+                    <ShieldCheck size={17} strokeWidth={2.2} />
+                  </span>
+                  <span className="flex-1 text-left">
+                    <span className="block text-sm font-semibold">Moderasi</span>
+                    <span className="block text-[11px] text-muted-foreground">Tinjau laporan konten</span>
+                  </span>
+                </Link>
+              )}
 
               {enabled && (user ? (
                 <button
