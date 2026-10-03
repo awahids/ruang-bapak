@@ -42,6 +42,17 @@ npm run dev
 5. Untuk deploy (mis. Vercel), isi `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di environment variables hosting lalu deploy ulang — variabel `VITE_*` dibaca saat build.
 6. (Opsional) Aktifkan provider **Google** di **Authentication → Providers** agar tombol "Google" berfungsi.
 
+**Data contoh (seeder)**: `supabase/seed.sql` mengisi database dengan konten yang sama seperti mode demo: 22 akun bapak contoh, 29 postingan di semua ruang (termasuk satu curhat anonim dan cek-in hari ini), komentar bersarang, dukungan "aman", follow, dan beberapa pesan langsung. Notifikasi ikut terbentuk lewat trigger.
+
+- Supabase CLI: otomatis dijalankan saat `supabase db reset` (lokal).
+- Project hosted: tempel seluruh isi file ke **SQL Editor** lalu Run.
+
+Seeder aman dijalankan ulang: akun contoh lama (beserta semua kontennya) dihapus lalu dibuat lagi dengan waktu terbaru. Akun asli tidak disentuh, tetapi dukungan atau komentar akun asli di postingan contoh ikut terhapus. Akun contoh memakai email `@demo.ruangbapak.invalid` tanpa password, jadi tidak bisa dipakai login. Untuk menghapus semua data contoh:
+
+```sql
+delete from auth.users where email like '%@demo.ruangbapak.invalid';
+```
+
 **Moderator** dipilih lewat SQL Editor (pengguna tidak bisa mengangkat dirinya sendiri):
 
 ```sql
