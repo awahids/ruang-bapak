@@ -310,6 +310,47 @@ export async function setFollowing(followeeId: string, follow: boolean): Promise
   if (error) throw error;
 }
 
+export type SuggestedProfile = {
+  id: string;
+  username: string;
+  name: string;
+  initials: string;
+  color: string;
+  verified: boolean;
+  bio: string;
+  followers: number;
+  recentPosts: number;
+};
+
+/** People to follow: active members first, excluding yourself, people you follow and blocks. */
+export async function fetchSuggestedProfiles(limit: number): Promise<SuggestedProfile[]> {
+  const { data, error } = await client().rpc("suggested_profiles", { max_results: limit });
+  if (error) throw error;
+
+  return (
+    data as {
+      id: string;
+      username: string;
+      display_name: string;
+      avatar_color: string;
+      verified: boolean;
+      bio: string;
+      follower_count: number;
+      recent_post_count: number;
+    }[]
+  ).map((row) => ({
+    id: row.id,
+    username: row.username,
+    name: row.display_name,
+    initials: getInitials(row.display_name),
+    color: row.avatar_color,
+    verified: row.verified,
+    bio: row.bio,
+    followers: row.follower_count,
+    recentPosts: row.recent_post_count,
+  }));
+}
+
 /** Turns Supabase/Postgres errors into short Indonesian messages for toasts. */
 export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String(error.message) : "";

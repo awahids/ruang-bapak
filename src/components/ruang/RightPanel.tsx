@@ -3,6 +3,8 @@ import { Search, ThumbsUp, MoreHorizontal, Settings, Smile } from "lucide-react"
 import { Avatar } from "./Avatar";
 import { cn } from "@/lib/utils";
 import { butuhDukungan, topikAman } from "@/data/ruang-bapak";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { SuggestedBapak } from "./SuggestedBapak";
 
 interface RightPanelProps {
   mode?: "desktop-column" | "mobile-stacked";
@@ -24,6 +26,9 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
           </div>
         </div>
       )}
+
+      {/* Real people to follow come first when the backend is on */}
+      {isSupabaseConfigured && <SuggestedBapak />}
 
       {/* Trending Topics */}
       <section className="rounded-2xl bg-muted/30 overflow-hidden">
@@ -50,27 +55,29 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
         </div>
       </section>
 
-      {/* Who to Follow / Support */}
-      <section className="rounded-2xl bg-muted/30 overflow-hidden">
-        <h2 className="px-4 py-3 text-xl font-extrabold text-foreground">Bapak Butuh Dukungan</h2>
-        <div className="flex flex-col">
-          {butuhDukungan.slice(0, 3).map((b) => (
-            <div key={b.name} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
-              <Avatar initials={b.initials} color={b.color} size={40} />
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-foreground truncate hover:underline cursor-pointer">{b.name}</p>
-                <p className="text-[13px] text-muted-foreground truncate">@{b.initials.toLowerCase()}bapak</p>
+      {/* Sample "who to follow" list for demo mode */}
+      {!isSupabaseConfigured && (
+        <section className="rounded-2xl bg-muted/30 overflow-hidden">
+          <h2 className="px-4 py-3 text-xl font-extrabold text-foreground">Bapak Butuh Dukungan</h2>
+          <div className="flex flex-col">
+            {butuhDukungan.slice(0, 3).map((b) => (
+              <div key={b.name} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
+                <Avatar initials={b.initials} color={b.color} size={40} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-foreground truncate hover:underline cursor-pointer">{b.name}</p>
+                  <p className="text-[13px] text-muted-foreground truncate">@{b.initials.toLowerCase()}bapak</p>
+                </div>
+                <button className="h-8 rounded-full bg-foreground px-4 text-xs font-bold text-background transition-transform active:scale-95">
+                  Ikuti
+                </button>
               </div>
-              <button className="h-8 rounded-full bg-foreground px-4 text-xs font-bold text-background transition-transform active:scale-95">
-                Ikuti
-              </button>
-            </div>
-          ))}
-          <button className="px-4 py-4 text-left text-[15px] text-primary hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors">
-            Tampilkan lebih banyak
-          </button>
-        </div>
-      </section>
+            ))}
+            <button className="px-4 py-4 text-left text-[15px] text-primary hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors">
+              Tampilkan lebih banyak
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Daily Tips */}
       <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-foreground shadow-soft">

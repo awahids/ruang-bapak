@@ -105,6 +105,7 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
         queryClient.invalidateQueries({ queryKey: ["is-following"] }),
         queryClient.invalidateQueries({ queryKey: ["follow-stats"] }),
         queryClient.invalidateQueries({ queryKey: ["feed"] }),
+        queryClient.invalidateQueries({ queryKey: ["suggestions"] }),
       ]);
       toast.success(following ? `Berhenti mengikuti @${profile.username}` : `Mengikuti @${profile.username}`);
     } catch (error) {
