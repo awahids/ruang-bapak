@@ -351,6 +351,28 @@ export async function fetchSuggestedProfiles(limit: number): Promise<SuggestedPr
   }));
 }
 
+export type TrendingTag = { tag: string; category: PostCategory; posts: number };
+
+/** Most used tags in the last `windowDays` days (check-ins excluded). */
+export async function fetchTrendingTags(windowDays: number, limit: number): Promise<TrendingTag[]> {
+  const { data, error } = await client().rpc("trending_tags", { window_days: windowDays, max_results: limit });
+  if (error) throw error;
+
+  return (data as { tag: string; category: PostCategory; post_count: number }[]).map((row) => ({
+    tag: row.tag,
+    category: row.category,
+    posts: row.post_count,
+  }));
+}
+
+/** Check-ins posted since midnight WIB. */
+export async function fetchCheckinsToday(): Promise<number> {
+  const { data, error } = await client().rpc("checkins_today");
+  if (error) throw error;
+
+  return data as number;
+}
+
 /** Turns Supabase/Postgres errors into short Indonesian messages for toasts. */
 export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String(error.message) : "";

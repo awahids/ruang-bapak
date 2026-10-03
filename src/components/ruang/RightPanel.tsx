@@ -4,6 +4,7 @@ import { Avatar } from "./Avatar";
 import { cn } from "@/lib/utils";
 import { butuhDukungan, topikAman } from "@/data/ruang-bapak";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { CheckinToday, TrendingTopics } from "./CommunityPulse";
 import { SuggestedBapak } from "./SuggestedBapak";
 
 interface RightPanelProps {
@@ -30,30 +31,32 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
       {/* Real people to follow come first when the backend is on */}
       {isSupabaseConfigured && <SuggestedBapak />}
 
-      {/* Trending Topics */}
-      <section className="rounded-2xl bg-muted/30 overflow-hidden">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <h2 className="text-xl font-extrabold text-foreground">Topik Hangat</h2>
-          <button className="p-2 rounded-full hover:bg-muted transition-colors">
-            <Settings size={18} />
-          </button>
-        </div>
-        <div className="flex flex-col">
-          {topikAman.slice(0, 6).map((t, i) => (
-            <button key={t.label} className="flex flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-muted-foreground">Trending di {t.label}</span>
-                <MoreHorizontal size={14} className="text-muted-foreground" />
-              </div>
-              <span className="font-bold text-foreground">#Bapak{t.label.replace(/\s/g, '')}</span>
-              <span className="text-[13px] text-muted-foreground">{100 + i * 42} postingan</span>
+      {/* Trending topics: live tags, or the sample list in demo mode */}
+      {isSupabaseConfigured ? <TrendingTopics /> : (
+        <section className="rounded-2xl bg-muted/30 overflow-hidden">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <h2 className="text-xl font-extrabold text-foreground">Topik Hangat</h2>
+            <button className="p-2 rounded-full hover:bg-muted transition-colors">
+              <Settings size={18} />
             </button>
-          ))}
-          <button className="px-4 py-4 text-left text-[15px] text-primary hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors">
-            Tampilkan lebih banyak
-          </button>
-        </div>
-      </section>
+          </div>
+          <div className="flex flex-col">
+            {topikAman.slice(0, 6).map((t, i) => (
+              <button key={t.label} className="flex flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] text-muted-foreground">Trending di {t.label}</span>
+                  <MoreHorizontal size={14} className="text-muted-foreground" />
+                </div>
+                <span className="font-bold text-foreground">#Bapak{t.label.replace(/\s/g, '')}</span>
+                <span className="text-[13px] text-muted-foreground">{100 + i * 42} postingan</span>
+              </button>
+            ))}
+            <button className="px-4 py-4 text-left text-[15px] text-primary hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors">
+              Tampilkan lebih banyak
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Sample "who to follow" list for demo mode */}
       {!isSupabaseConfigured && (
@@ -91,22 +94,24 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
         <p className="mt-2 text-right text-[11px] text-muted-foreground">— Bapak Bijak (Level 99)</p>
       </section>
 
-      {/* Daily Check-in */}
-      <section className="rounded-2xl bg-gradient-sage p-4 text-primary-foreground shadow-soft">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-bold">Aman Pak? Hari Ini</h3>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-3xl font-black">1.247</span>
-              <span className="text-xs font-medium opacity-80">cek-in</span>
+      {/* Daily check-in count: live, or the sample number in demo mode */}
+      {isSupabaseConfigured ? <CheckinToday /> : (
+        <section className="rounded-2xl bg-gradient-sage p-4 text-primary-foreground shadow-soft">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-bold">Aman Pak? Hari Ini</h3>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="text-3xl font-black">1.247</span>
+                <span className="text-xs font-medium opacity-80">cek-in</span>
+              </div>
             </div>
+            <ThumbsUp size={24} strokeWidth={2.5} />
           </div>
-          <ThumbsUp size={24} strokeWidth={2.5} />
-        </div>
-        <p className="mt-2 text-[13px] leading-relaxed opacity-90">
-          Setiap "Aman Pak?" sangat berarti bagi sesama Bapak.
-        </p>
-      </section>
+          <p className="mt-2 text-[13px] leading-relaxed opacity-90">
+            Setiap "Aman Pak?" sangat berarti bagi sesama Bapak.
+          </p>
+        </section>
+      )}
 
       {/* Footer Links */}
       <footer className="px-4 py-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-muted-foreground">

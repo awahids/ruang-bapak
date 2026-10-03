@@ -53,6 +53,8 @@ function useRemoteFeed(filter: FeedFilter | null): FeedState {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["feed"] }),
         queryClient.invalidateQueries({ queryKey: ["profile-stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["trending-tags"] }),
+        queryClient.invalidateQueries({ queryKey: ["checkins-today"] }),
         postId === undefined ? undefined : queryClient.invalidateQueries({ queryKey: ["post", postId] }),
       ]).then(() => undefined),
     [queryClient],

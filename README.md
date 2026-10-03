@@ -12,6 +12,7 @@ Dengan backend [Supabase](https://supabase.com) aktif, Ruang Bapak berjalan seba
 - **Profil**: edit nama, username, bio, lokasi; halaman profil publik di `/u/<username>` dengan jumlah pengikut/mengikuti.
 - **Ikuti (follow)** bapak lain dari profilnya atau dari panel **Saran Kawan** (bapak yang aktif posting bulan ini); tab **Kawan Akrab** di tiap ruang menampilkan postingan dari bapak yang diikuti (postingan anonim tidak ikut).
 - **Inbox**: pesan langsung antar bapak (tombol "Kirim Pesan" di profil) dan **notifikasi** saat postingan dapat dukungan, komentar, balasan, atau saat ada pengikut baru. Pesan dan notifikasi masuk **realtime** (Supabase Realtime), dengan polling berkala sebagai cadangan.
+- **Panel kanan** berisi data asli: **Saran Kawan**, **Topik Hangat** (tag paling ramai 7 hari terakhir), dan jumlah **cek-in hari ini** (sejak tengah malam WIB).
 - **Keamanan komunitas**: **laporkan** postingan/komentar, **blokir** pengguna (konten & notifikasinya disembunyikan, DM ditutup dua arah), dan halaman **Moderasi** (`/moderasi`) bagi moderator untuk menyembunyikan atau memulihkan konten yang dilaporkan.
 
 Tanpa konfigurasi Supabase, aplikasi otomatis berjalan dalam **mode demo** memakai data contoh (tidak ada yang tersimpan).
