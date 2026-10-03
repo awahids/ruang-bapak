@@ -396,7 +396,7 @@ export async function fetchCheckinsToday(): Promise<number> {
 export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String(error.message) : "";
 
-  if (/invalid login credentials/i.test(message)) return "Email atau password salah, Pak.";
+  if (/invalid login credentials/i.test(message)) return "Email atau password salah, Pak. Kalau dulu daftar pakai Google, masuk lewat tombol Google.";
   if (/email not confirmed/i.test(message)) return "Email belum dikonfirmasi. Cek kotak masuk Bapak dulu.";
   if (/already registered/i.test(message)) return "Email ini sudah terdaftar. Silakan masuk.";
   if (/password should be at least/i.test(message)) return "Password minimal 6 karakter.";
