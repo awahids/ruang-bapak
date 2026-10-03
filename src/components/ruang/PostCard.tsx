@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar } from "./Avatar";
+import { TagPill } from "./TagPill";
 import type { FeedItem } from "@/data/ruang-bapak";
 import { displayHandle } from "@/lib/social";
 import { cn } from "@/lib/utils";
@@ -148,6 +149,12 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
         </header>
 
         <p className="mt-1 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{post.text}</p>
+
+        {post.tag && (
+          <TagPill tone={post.tagTone} className="mt-2 px-2.5 py-1 text-[11px] hover:scale-100">
+            #{post.tag}
+          </TagPill>
+        )}
 
         <footer className="mt-3 flex max-w-md items-center justify-between">
           <button

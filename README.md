@@ -8,6 +8,7 @@ Dengan backend [Supabase](https://supabase.com) aktif, Ruang Bapak berjalan seba
 
 - **Akun**: daftar & masuk dengan email/password (opsional Google), **lupa password** lewat tautan email, profil dibuat otomatis saat daftar.
 - **Postingan** per ruang (Teras, Uneg-uneg, Diskusi, Aman Pak?, Paguyuban, Profil), termasuk mode **anonim** — identitas penulis disembunyikan dari pengguna lain di level database.
+- **Tag postingan**: pilih tag dari saran tiap ruang (mis. Ngopi, Ronda, Tugas Negara) atau tulis tag sendiri di kotak tulis; tag tampil di postingan dan dihitung di **Topik Hangat**.
 - **Dukungan "aman"** (like), **komentar bersarang**, dan hapus postingan milik sendiri.
 - **Profil**: edit nama, username, bio, lokasi; halaman profil publik di `/u/<username>` dengan jumlah pengikut/mengikuti.
 - **Ikuti (follow)** bapak lain dari profilnya atau dari panel **Saran Kawan** (bapak yang aktif posting bulan ini); tab **Kawan Akrab** di tiap ruang menampilkan postingan dari bapak yang diikuti (postingan anonim tidak ikut).

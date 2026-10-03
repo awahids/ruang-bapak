@@ -14,6 +14,7 @@ export function CheckInPost({ item }: { item: FeedItem }) {
         </p>
         <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
           <span>{item.time}</span>
+          {item.tag && <span className="font-semibold text-primary">#{item.tag}</span>}
           <span className="flex items-center gap-1"><ThumbsUp size={10} /> {item.safe}</span>
           <span className="flex items-center gap-1"><MessageSquare size={10} /> {item.reply}</span>
         </div>

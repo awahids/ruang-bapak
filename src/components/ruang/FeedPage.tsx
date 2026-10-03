@@ -176,7 +176,7 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
           )
         )}
 
-        {showComposer && <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} />}
+        {showComposer && <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} defaultTag={fallbackTagByMode[config.composerMode].tag} />}
 
         <div className="border-b border-border/40">
           <TabBar active={activeTab} onChange={setActiveTab} />

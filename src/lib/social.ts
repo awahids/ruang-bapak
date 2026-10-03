@@ -101,6 +101,25 @@ export function getInitials(name: string): string {
   return letters.join("") || "B";
 }
 
+/** Longest tag a member can type in the composer (the database allows 40). */
+export const MAX_TAG_LENGTH = 30;
+
+/**
+ * Cleans a tag typed in the composer: drops leading "#", squeezes spaces, caps
+ * the length and capitalises each word. Reuses the spelling of a known tag that matches regardless
+ * of case, so "ngopi" and "Ngopi" count as one topic in "Topik Hangat".
+ */
+export function normalizeTag(raw: string, known: readonly string[] = []): string | null {
+  const cleaned = raw.replace(/^[#\s]+/, "").replace(/\s+/g, " ").trim().slice(0, MAX_TAG_LENGTH).trim();
+  if (!cleaned) return null;
+
+  const match = known.find((tag) => tag.toLocaleLowerCase("id-ID") === cleaned.toLocaleLowerCase("id-ID"));
+  if (match) return match;
+
+  // Capitalise each word like the preset tags ("Tugas Negara"); keeps acronyms such as "BPJS".
+  return cleaned.replace(/(^|\s)(\p{L})/gu, (_, space: string, letter: string) => space + letter.toLocaleUpperCase("id-ID"));
+}
+
 /** Handle shown after "@": the username, or the initials-based handle used by the demo data. */
 export function displayHandle(item: { handle?: string; initials: string }): string {
   return item.handle ?? `${item.initials.toLowerCase()}bapak`;
