@@ -5,6 +5,8 @@ import {
   Heart,
   Home,
   Inbox,
+  Search,
+  Bookmark,
   Leaf,
   MessageCircle,
   Moon,
@@ -64,6 +66,22 @@ export type FeedItem = {
   anonymous?: boolean;
   /** Author's user id; null for anonymous posts written by someone else. */
   authorId?: string | null;
+  /** Author's profile photo. */
+  avatarUrl?: string | null;
+  /** Attached photo (public URL) and its storage path, used when deleting. */
+  imageUrl?: string | null;
+  imagePath?: string | null;
+  poll?: PostPoll | null;
+  bookmarked?: boolean;
+  /** Paguyuban group the post was written in. */
+  group?: { slug: string; name: string } | null;
+};
+
+export type PostPoll = {
+  options: string[];
+  counts: number[];
+  /** Index of the option the viewer picked, if any. */
+  myVote: number | null;
 };
 
 export type FeedPageConfig = {
@@ -86,6 +104,8 @@ export type SecondaryNavItem = {
   to: string;
   icon: LucideIcon;
   badge?: number;
+  /** Subtitle in the mobile "Menu Lainnya" sheet. */
+  hint?: string;
 };
 
 type ComposerPreset = {
@@ -415,7 +435,7 @@ const feedItemsProfil: FeedItem[] = [
   },
 ];
 
-const allFeedItems: FeedItem[] = [
+export const allFeedItems: FeedItem[] = [
   ...feedItemsBeranda,
   ...feedItemsCurhat,
   ...feedItemsDiskusi,
@@ -552,6 +572,8 @@ export const primaryNavItems: PrimaryNavItem[] = [
 
 export const secondaryNavItems: SecondaryNavItem[] = [
   { label: "Inbox", to: "/inbox", icon: Inbox, badge: 3 },
+  { label: "Cari", to: "/cari", icon: Search, hint: "Postingan, bapak, dan tag" },
+  { label: "Tersimpan", to: "/tersimpan", icon: Bookmark, hint: "Postingan yang Bapak simpan" },
   { label: "Profil", to: "/profil", icon: User },
 ];
 

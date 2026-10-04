@@ -12,7 +12,7 @@ export function ThreadRow({ thread, onOpen }: { thread: InboxThread; onOpen: () 
 
   return (
     <button type="button" onClick={onOpen} className={cn(rowClassName, unread ? "bg-primary/5" : "bg-surface")}>
-      <Avatar initials={thread.otherInitials} color={thread.otherColor} size={48} />
+      <Avatar initials={thread.otherInitials} color={thread.otherColor} src={thread.otherAvatarUrl} size={48} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
@@ -57,7 +57,7 @@ export function NotificationRow({ notification, onOpen }: { notification: Activi
   return (
     <button type="button" onClick={onOpen} className={cn(rowClassName, notification.unread ? "bg-primary/5" : "bg-surface")}>
       <div className="relative shrink-0">
-        <Avatar initials={notification.actorInitials} color={notification.actorColor} size={48} />
+        <Avatar initials={notification.actorInitials} color={notification.actorColor} src={notification.actorAvatarUrl} size={48} />
         <span className={cn("absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface", className)}>
           <Icon size={11} strokeWidth={2.5} />
         </span>

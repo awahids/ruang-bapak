@@ -7,7 +7,7 @@ import { blockUser, type ReportTarget } from "@/lib/moderation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeed } from "@/hooks/use-social";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { describeError, displayHandle, type FeedFilter, type PostCategory } from "@/lib/social";
+import { POST_IMAGES_BUCKET, describeError, displayHandle, removeImage, uploadImage, type FeedFilter, type PostCategory } from "@/lib/social";
 import { feedPageConfigs, type ComposerMode, type FeedItem, type FeedPageKey } from "@/data/ruang-bapak";
 import { FeedComposer, type ComposerSubmitPayload } from "./FeedComposer";
 import { PostCard } from "./PostCard";
@@ -25,6 +25,12 @@ interface FeedPageProps {
   showComposer?: boolean;
   /** Replaces the page's default empty-state title and hint. */
   emptyState?: { title: string; hint: string };
+  /** Replaces the page title in the sticky header. */
+  title?: string;
+  /** New posts from the composer go into this Paguyuban group. */
+  groupId?: number;
+  /** Sample posts for demo mode; defaults to the page's own. */
+  demoItems?: FeedItem[];
 }
 
 const categoryByMode: Record<Exclude<ComposerMode, "pesan">, PostCategory> = {
@@ -46,7 +52,7 @@ const fallbackTagByMode: Record<ComposerMode, { tag: string; tone: FeedItem["tag
   profil: { tag: "Update Profil", tone: "sage" },
 };
 
-export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = true, emptyState }: FeedPageProps) {
+export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = true, emptyState, title, groupId, demoItems }: FeedPageProps) {
   const config = feedPageConfigs[pageKey];
   const [activeTab, setActiveTab] = useState(0);
   const requireAuth = useRequireAuth();
@@ -57,7 +63,7 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
     () => (pageKey === "profil" || pageKey === "inbox" ? null : { kind: "page", pageKey }),
     [pageKey],
   );
-  const feed = useFeed(feedFilter === undefined ? defaultFilter : feedFilter, config.initialItems);
+  const feed = useFeed(feedFilter === undefined ? defaultFilter : feedFilter, demoItems ?? config.initialItems);
   const { items } = feed;
 
   // "Kawan Akrab" shows posts from followed bapak on the page feeds once signed in.
@@ -100,18 +106,29 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
     if (config.composerMode === "pesan" || !requireAuth()) return false;
 
     const fallback = fallbackTagByMode[config.composerMode];
+    let imagePath: string | null = null;
 
     try {
+      if (payload.image && isSupabaseConfigured) {
+        if (!user) throw new Error("Silakan masuk dulu, Pak.");
+        imagePath = await uploadImage(POST_IMAGES_BUCKET, user.id, payload.image);
+      }
+
       await feed.addPost({
         category: categoryByMode[config.composerMode],
         tag: payload.quickAction || fallback.tag,
         tagTone: fallback.tone,
         body: payload.text,
         anonymous: payload.anonymous,
+        imagePath,
+        pollOptions: payload.pollOptions,
+        groupId: groupId ?? null,
+        previewImageUrl: !isSupabaseConfigured && payload.image ? URL.createObjectURL(payload.image) : null,
       });
       setActiveTab(0);
       return true;
     } catch (error) {
+      if (imagePath) void removeImage(POST_IMAGES_BUCKET, imagePath);
       toast.error("Postingan gagal dikirim", { description: describeError(error) });
       return false;
     }
@@ -165,7 +182,7 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
       <div className="flex min-w-0 flex-col">
         {/* Sticky Feed Header */}
         <header className="sticky top-0 z-20 border-b border-border/40 bg-surface/80 px-4 py-3 pb-3 backdrop-blur-md pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">{config.title}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">{title ?? config.title}</h1>
         </header>
 
         {renderHeader ? renderHeader() : (

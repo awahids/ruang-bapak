@@ -1,17 +1,21 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { describeError, type Profile, type ProfileUpdate } from "@/lib/social";
+import { describeError, getInitials, type Profile, type ProfileUpdate } from "@/lib/social";
+import { Avatar } from "./Avatar";
 
 interface EditProfileDialogProps {
   profile: Profile;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (changes: ProfileUpdate) => Promise<void>;
+  /** Uploads a new profile photo, or removes it with null. */
+  onPhotoChange?: (file: File | null) => Promise<void>;
 }
 
 const toForm = (profile: Profile): ProfileUpdate => ({
@@ -21,9 +25,30 @@ const toForm = (profile: Profile): ProfileUpdate => ({
   location: profile.location,
 });
 
-export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditProfileDialogProps) {
+export function EditProfileDialog({ profile, open, onOpenChange, onSave, onPhotoChange }: EditProfileDialogProps) {
   const [form, setForm] = useState<ProfileUpdate>(() => toForm(profile));
   const [saving, setSaving] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const changePhoto = async (file: File | null) => {
+    if (!onPhotoChange) return;
+    setPhotoBusy(true);
+    try {
+      await onPhotoChange(file);
+      toast.success(file ? "Foto profil diperbarui" : "Foto profil dihapus");
+    } catch (error) {
+      toast.error("Foto profil gagal disimpan", { description: describeError(error) });
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) void changePhoto(file);
+  };
 
   useEffect(() => {
     if (open) setForm(toForm(profile));
@@ -70,6 +95,25 @@ export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditP
           <DialogTitle>Edit Profil</DialogTitle>
           <DialogDescription>Biar bapak-bapak lain makin kenal.</DialogDescription>
         </DialogHeader>
+
+        {onPhotoChange && (
+          <div className="flex items-center gap-4">
+            <Avatar initials={getInitials(profile.display_name)} color={profile.avatar_color} src={profile.avatar_url} size={64} />
+            <div className="flex flex-wrap gap-2">
+              <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} aria-label="Pilih foto profil" />
+              <Button type="button" variant="outline" size="sm" disabled={photoBusy} onClick={() => fileInput.current?.click()}>
+                {photoBusy ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Camera size={14} className="mr-1.5" />}
+                {profile.avatar_url ? "Ganti foto" : "Pasang foto"}
+              </Button>
+              {profile.avatar_url && (
+                <Button type="button" variant="ghost" size="sm" disabled={photoBusy} onClick={() => void changePhoto(null)} className="text-destructive hover:text-destructive">
+                  <Trash2 size={14} className="mr-1.5" />
+                  Hapus foto
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         <form id="edit-profile" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">

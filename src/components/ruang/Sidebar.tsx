@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, ShieldCheck, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
@@ -11,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCalmMode } from "@/contexts/CalmModeContext";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "@/data/ruang-bapak";
 import { useInboxBadge } from "@/hooks/use-inbox";
@@ -59,8 +59,9 @@ function NavItem({
 }
 
 export function Sidebar() {
-  const [tenang, setTenang] = useState(false);
-  const inboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
+  const { calm, toggleCalm } = useCalmMode();
+  const rawInboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
+  const inboxBadge = calm ? undefined : rawInboxBadge;
   const { profile } = useAuth();
 
   return (
@@ -97,11 +98,21 @@ export function Sidebar() {
           {profile?.is_moderator && <NavItem to="/moderasi" icon={ShieldCheck} label="Moderasi" />}
 
           <button
-            onClick={() => setTenang((v) => !v)}
-            className="group flex items-center gap-4 rounded-full px-4 py-3 text-left transition-all text-foreground hover:bg-primary-soft/50"
+            onClick={() => {
+              toggleCalm();
+              toast(calm ? "Mode Rehat dimatikan" : "Mode Rehat aktif", {
+                description: calm ? "Angka dan notifikasi tampil lagi." : "Angka dukungan, komentar, dan notifikasi disembunyikan dulu. Istirahat yang cukup, Pak.",
+              });
+            }}
+            aria-pressed={calm}
+            title={calm ? "Matikan Mode Rehat" : "Sembunyikan angka dan notifikasi sejenak"}
+            className={cn(
+              "group flex items-center gap-4 rounded-full px-4 py-3 text-left transition-all hover:bg-primary-soft/50",
+              calm ? "bg-primary-soft text-primary" : "text-foreground",
+            )}
           >
-            <Moon size={24} strokeWidth={2} />
-            <span className="hidden text-xl lg:inline">{tenang ? "Mode Siaga" : "Mode Rehat"}</span>
+            <Moon size={24} strokeWidth={2} fill={calm ? "currentColor" : "none"} />
+            <span className="hidden text-xl lg:inline">{calm ? "Mode Rehat: Aktif" : "Mode Rehat"}</span>
           </button>
         </nav>
 
@@ -162,7 +173,7 @@ function SidebarAccount() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="mt-auto flex items-center gap-3 rounded-full p-3 text-left transition-colors hover:bg-muted/50">
-          <Avatar initials={getInitials(name)} color={profile?.avatar_color ?? "hsl(28 33% 41%)"} size={40} />
+          <Avatar initials={getInitials(name)} color={profile?.avatar_color ?? "hsl(28 33% 41%)"} src={profile?.avatar_url} size={40} />
           <div className="hidden min-w-0 flex-1 lg:block">
             <p className="truncate text-sm font-bold leading-none text-foreground">{name}</p>
             {profile && <p className="mt-1 truncate text-xs text-muted-foreground">@{profile.username}</p>}

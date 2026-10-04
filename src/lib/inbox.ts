@@ -8,6 +8,7 @@ export type InboxThread = {
   otherName: string;
   otherInitials: string;
   otherColor: string;
+  otherAvatarUrl: string | null;
   otherVerified: boolean;
   lastBody: string | null;
   lastFromMe: boolean;
@@ -39,6 +40,7 @@ export type ActivityNotification = {
   actorUsername: string;
   actorInitials: string;
   actorColor: string;
+  actorAvatarUrl: string | null;
 };
 
 type ThreadRow = {
@@ -54,6 +56,7 @@ type ThreadRow = {
   unread_count: number;
   blocked_by_me: boolean;
   blocked_me: boolean;
+  other_avatar_url: string | null;
 };
 
 type NotificationRow = {
@@ -63,7 +66,7 @@ type NotificationRow = {
   preview: string;
   read_at: string | null;
   created_at: string;
-  actor: Pick<Profile, "username" | "display_name" | "avatar_color"> | null;
+  actor: Pick<Profile, "username" | "display_name" | "avatar_color" | "avatar_url"> | null;
 };
 
 const MESSAGE_LIMIT = 200;
@@ -81,6 +84,7 @@ const toThread = (row: ThreadRow): InboxThread => ({
   otherName: row.other_display_name,
   otherInitials: getInitials(row.other_display_name),
   otherColor: row.other_avatar_color,
+  otherAvatarUrl: row.other_avatar_url,
   otherVerified: row.other_verified,
   lastBody: row.last_body,
   lastFromMe: row.last_from_me,
@@ -146,7 +150,7 @@ export async function markConversationRead(conversationId: number): Promise<void
 export async function fetchNotifications(): Promise<ActivityNotification[]> {
   const { data, error } = await client()
     .from("notifications")
-    .select("id, type, post_id, preview, read_at, created_at, actor:profiles!actor_id(username, display_name, avatar_color)")
+    .select("id, type, post_id, preview, read_at, created_at, actor:profiles!actor_id(username, display_name, avatar_color, avatar_url)")
     .order("created_at", { ascending: false })
     .limit(NOTIFICATION_LIMIT);
   if (error) throw error;
@@ -165,6 +169,7 @@ export async function fetchNotifications(): Promise<ActivityNotification[]> {
       actorUsername: row.actor?.username ?? "",
       actorInitials: getInitials(actorName),
       actorColor: row.actor?.avatar_color ?? "hsl(205 14% 41%)",
+      actorAvatarUrl: row.actor?.avatar_url ?? null,
     };
   });
 }

@@ -73,7 +73,7 @@ export function SuggestedBapak() {
           {visible.map((person) => (
             <div key={person.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">
               <Link to={`/u/${person.username}`} className="shrink-0" aria-label={`Profil ${person.name}`}>
-                <Avatar initials={person.initials} color={person.color} size={40} />
+                <Avatar initials={person.initials} color={person.color} src={person.avatarUrl} size={40} />
               </Link>
               <Link to={`/u/${person.username}`} className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 truncate font-bold text-foreground hover:underline">

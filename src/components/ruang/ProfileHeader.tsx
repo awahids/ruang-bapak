@@ -6,6 +6,7 @@ interface ProfileHeaderProps {
   handle: string;
   initials: string;
   color: string;
+  avatarUrl?: string | null;
   bio: string;
   stats: {
     label: string;
@@ -35,6 +36,7 @@ export function ProfileHeader({
   handle,
   initials,
   color,
+  avatarUrl,
   bio,
   stats,
   location = "Jakarta Selatan",
@@ -59,7 +61,7 @@ export function ProfileHeader({
       <div className="relative px-4 pb-4 sm:px-6">
         {/* Avatar */}
         <div className="absolute -top-12 left-4 rounded-full border-4 border-surface sm:-top-16 sm:left-6">
-          <Avatar initials={initials} color={color} size={window.innerWidth < 640 ? 80 : 120} />
+          <Avatar initials={initials} color={color} src={avatarUrl} size={window.innerWidth < 640 ? 80 : 120} />
         </div>
 
         {/* Action Button */}

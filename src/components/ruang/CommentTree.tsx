@@ -84,7 +84,7 @@ function CommentNode({ comment, depth, replyTargetId, replyDrafts, onToggleReply
     <article className={isRoot ? "border-b border-border/40 py-4 last:border-b-0" : "relative py-3 first:pt-2 last:pb-1"}>
       <div className="group relative flex min-w-0 gap-2.5 rounded-md p-1 transition-colors hover:bg-muted/30">
         <div data-node-avatar className="shrink-0">
-          <Avatar initials={comment.initials} color={comment.color} size={isRoot ? 40 : 34} />
+          <Avatar initials={comment.initials} color={comment.color} src={comment.avatarUrl} size={isRoot ? 40 : 34} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">

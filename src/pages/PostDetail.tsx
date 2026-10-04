@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { ArrowLeft, CheckCircle2, Flag, Loader2, MessageSquareText, Send, ThumbsUp } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Flag, Loader2, MessageSquareText, Send, ThumbsUp, Users } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ruang/Avatar";
@@ -7,6 +7,8 @@ import { CommentTree } from "@/components/ruang/CommentTree";
 import { ReportDialog } from "@/components/ruang/ReportDialog";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { TagPill } from "@/components/ruang/TagPill";
+import { BookmarkButton, PostImage, PostPollView, ShareButton } from "@/components/ruang/PostExtras";
+import { useCalmMode } from "@/contexts/CalmModeContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PostReply } from "@/data/post-detail";
@@ -27,6 +29,7 @@ const countCommentNodes = (items: PostReply[]): number =>
 const PostDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { calm } = useCalmMode();
   const { postId } = useParams();
   const requireAuth = useRequireAuth();
 
@@ -165,7 +168,7 @@ const PostDetail = () => {
 
         <article className="border-b border-border/40 bg-surface px-4 py-5 sm:px-6">
           <div className="flex gap-4">
-            <Avatar initials={post.initials} color={post.color} size={52} />
+            <Avatar initials={post.initials} color={post.color} src={post.avatarUrl} size={52} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
                 <h1 className="truncate text-lg font-bold text-foreground">
@@ -181,21 +184,43 @@ const PostDetail = () => {
                 </span>
               </div>
 
-              <div className="mt-2">
-                <TagPill tone={post.tagTone}>{post.tag}</TagPill>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Link to={`/tag/${encodeURIComponent(post.tag)}`} aria-label={`Lihat tag ${post.tag}`}>
+                  <TagPill tone={post.tagTone} className="hover:underline">#{post.tag}</TagPill>
+                </Link>
+                {post.group && (
+                  <Link
+                    to={`/komunitas/${post.group.slug}`}
+                    className="flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    <Users size={12} strokeWidth={2.5} />
+                    {post.group.name}
+                  </Link>
+                )}
               </div>
 
               <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/90">{post.text}</p>
 
+              {post.imageUrl && <PostImage src={post.imageUrl} />}
+              {post.poll && <PostPollView postId={post.id} poll={post.poll} />}
+
               <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <ThumbsUp size={15} />
-                  {post.safe} aman
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <MessageSquareText size={15} />
-                  {totalComments} komentar
-                </span>
+                {!calm && (
+                  <>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ThumbsUp size={15} />
+                      {post.safe} aman
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <MessageSquareText size={15} />
+                      {totalComments} komentar
+                    </span>
+                  </>
+                )}
+                <div className="ml-auto flex items-center gap-1">
+                  <ShareButton post={post} />
+                  <BookmarkButton post={post} />
+                </div>
               </div>
             </div>
           </div>

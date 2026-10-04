@@ -1,17 +1,14 @@
 import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { fetchAttendance, saveAttendance, todayWib, type AttendanceRecord, type AttendanceStatus } from "@/lib/attendance";
+import { createPost, describeError } from "@/lib/social";
 import { CalendarCheck2, ClipboardList, Stethoscope, UserCheck, UserMinus, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-
-type AttendanceStatus = "hadir" | "izin" | "sakit" | "lembur";
-
-type AttendanceRecord = {
-  date: string;
-  status: AttendanceStatus;
-  note?: string;
-  submittedAt: string;
-};
 
 const STORAGE_KEY = "ruang-bapak:absen-pak";
 
@@ -32,14 +29,6 @@ const statusLabelMap: Record<AttendanceStatus, string> = {
   izin: "Izin",
   sakit: "Sakit",
   lembur: "Lembur",
-};
-
-const formatDateKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
 };
 
 const formatDateLabel = (dateKey: string): string => {
@@ -96,11 +85,63 @@ const persistRecords = (records: AttendanceRecord[]) => {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 };
 
-export function AbsenPakCard() {
-  const today = formatDateKey(new Date());
+type AttendanceState = {
+  records: AttendanceRecord[];
+  isLoading: boolean;
+  save: (status: AttendanceStatus, note: string) => Promise<void>;
+};
+
+/** Attendance stored per member in Supabase. */
+function useRemoteAttendance(): AttendanceState {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const userId = user?.id ?? null;
+  const query = useQuery({
+    queryKey: ["attendance", userId],
+    queryFn: () => fetchAttendance(userId!),
+    enabled: userId !== null,
+  });
+
+  return {
+    records: query.data ?? [],
+    isLoading: query.isLoading,
+    save: async (status, note) => {
+      if (!userId) throw new Error("Silakan masuk dulu, Pak.");
+      await saveAttendance(userId, status, note);
+      await queryClient.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  };
+}
+
+/** Demo mode keeps attendance in this browser only. */
+function useLocalAttendance(): AttendanceState {
   const [records, setRecords] = useState<AttendanceRecord[]>(() => parseStoredRecords());
+
+  return {
+    records,
+    isLoading: false,
+    save: async (status, note) => {
+      const today = todayWib();
+      const nextRecord: AttendanceRecord = { date: today, status, note: note || undefined, submittedAt: new Date().toISOString() };
+      setRecords((previous) => {
+        const nextRecords = [nextRecord, ...previous.filter((record) => record.date !== today)].sort((a, b) => b.date.localeCompare(a.date));
+        persistRecords(nextRecords);
+        return nextRecords;
+      });
+    },
+  };
+}
+
+const useAttendance: () => AttendanceState = isSupabaseConfigured ? useRemoteAttendance : useLocalAttendance;
+
+export function AbsenPakCard() {
+  const today = todayWib();
+  const { records, isLoading, save } = useAttendance();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<AttendanceStatus>("hadir");
   const [note, setNote] = useState("");
+  const [shareAsCheckin, setShareAsCheckin] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const todayRecord = useMemo(
     () => records.find((record) => record.date === today),
@@ -115,24 +156,37 @@ export function AbsenPakCard() {
 
   const recentRecords = useMemo(() => records.slice(0, 5), [records]);
 
-  const handleSubmitAttendance = () => {
-    const cleanedNote = note.trim();
+  const handleSubmitAttendance = async () => {
+    const cleanedNote = note.trim().slice(0, 280);
 
-    const nextRecord: AttendanceRecord = {
-      date: today,
-      status,
-      note: cleanedNote || undefined,
-      submittedAt: new Date().toISOString(),
-    };
+    setSaving(true);
+    try {
+      await save(status, cleanedNote);
 
-    setRecords((previous) => {
-      const nextRecords = [nextRecord, ...previous.filter((record) => record.date !== today)]
-        .sort((a, b) => b.date.localeCompare(a.date));
-      persistRecords(nextRecords);
-      return nextRecords;
-    });
+      if (shareAsCheckin && isSupabaseConfigured) {
+        await createPost({
+          category: "checkin",
+          tag: "Cek-in Harian",
+          tagTone: "sage",
+          body: cleanedNote || `Absen hari ini: ${statusLabelMap[status]}.`,
+          anonymous: false,
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["feed"] }),
+          queryClient.invalidateQueries({ queryKey: ["checkins-today"] }),
+        ]);
+      }
 
-    setNote("");
+      toast.success(todayRecord ? "Absen hari ini diperbarui" : "Absen tercatat, terima kasih Pak!", {
+        description: shareAsCheckin ? "Juga dibagikan sebagai cek-in di Aman Pak?" : undefined,
+      });
+      setNote("");
+      setShareAsCheckin(false);
+    } catch (error) {
+      toast.error("Absen gagal disimpan", { description: describeError(error) });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -188,14 +242,28 @@ export function AbsenPakCard() {
         />
       </div>
 
+      {isSupabaseConfigured && (
+        <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={shareAsCheckin}
+            onChange={(event) => setShareAsCheckin(event.target.checked)}
+            className="h-4 w-4 accent-[hsl(var(--primary))]"
+          />
+          Bagikan juga sebagai cek-in di Aman Pak?
+        </label>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {todayRecord
-            ? `Absen hari ini sudah masuk: ${statusLabelMap[todayRecord.status]}`
-            : "Belum absen hari ini."}
+          {isLoading
+            ? "Memuat absen..."
+            : todayRecord
+              ? `Absen hari ini sudah masuk: ${statusLabelMap[todayRecord.status]}`
+              : "Belum absen hari ini."}
         </p>
-        <Button type="button" size="sm" onClick={handleSubmitAttendance}>
-          {todayRecord ? "Perbarui Absen Hari Ini" : "Kirim Absen Hari Ini"}
+        <Button type="button" size="sm" onClick={() => void handleSubmitAttendance()} disabled={saving || isLoading}>
+          {saving ? "Menyimpan..." : todayRecord ? "Perbarui Absen Hari Ini" : "Kirim Absen Hari Ini"}
         </Button>
       </div>
 
@@ -205,6 +273,9 @@ export function AbsenPakCard() {
           Riwayat Absen
         </h3>
 
+        {!isSupabaseConfigured && (
+          <p className="mt-1 text-xs text-muted-foreground">Mode demo: riwayat hanya tersimpan di browser ini.</p>
+        )}
         {recentRecords.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">Belum ada riwayat absen.</p>
         ) : (

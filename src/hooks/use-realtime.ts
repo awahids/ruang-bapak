@@ -3,6 +3,7 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCalmMode } from "@/contexts/CalmModeContext";
 import { supabase } from "@/integrations/supabase/client";
 
 type MessageRow = { id: number; conversation_id: number; sender_id: string };
@@ -35,6 +36,10 @@ export function useRealtimeInbox() {
   const location = useLocation();
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
+  // Mode Rehat keeps the caches fresh but skips the pop-up.
+  const { calm } = useCalmMode();
+  const calmRef = useRef(calm);
+  calmRef.current = calm;
 
   const userId = enabled ? user?.id ?? null : null;
 
@@ -46,7 +51,7 @@ export function useRealtimeInbox() {
       .channel(`inbox:${userId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const message = payload.new as MessageRow;
-        if (handleMessageInsert(queryClient, message, userId, pathnameRef.current)) {
+        if (handleMessageInsert(queryClient, message, userId, pathnameRef.current) && !calmRef.current) {
           toast("Ada pesan baru, Pak", {
             action: { label: "Buka", onClick: () => navigate(`/inbox/${message.conversation_id}`) },
           });

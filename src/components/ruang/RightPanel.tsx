@@ -1,4 +1,6 @@
+import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Search, ThumbsUp, MoreHorizontal, Settings, Smile } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { cn } from "@/lib/utils";
@@ -11,20 +13,38 @@ interface RightPanelProps {
   mode?: "desktop-column" | "mobile-stacked";
 }
 
+function PanelSearch() {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const q = query.trim();
+    navigate(q ? `/cari?q=${encodeURIComponent(q)}` : "/cari");
+  };
+
+  return (
+    <form onSubmit={submit} role="search" className="relative group">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" size={18} />
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Cari di Ruang Bapak"
+        aria-label="Cari di Ruang Bapak"
+        className="h-12 w-full rounded-full bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-surface focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
+      />
+    </form>
+  );
+}
+
 export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
   return (
     <aside className={cn("flex flex-col gap-4", mode === "desktop-column" ? "w-full max-w-[350px]" : "w-full")}>
       {/* Search Bar */}
       {mode === "desktop-column" && (
         <div className="sticky top-2 z-10 bg-background/80 pb-2 backdrop-blur-md">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" size={18} />
-            <input
-              type="text"
-              placeholder="Cari di Ruang Bapak"
-              className="h-12 w-full rounded-full bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-surface focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
-            />
-          </div>
+          <PanelSearch />
         </div>
       )}
 

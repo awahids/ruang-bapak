@@ -11,6 +11,7 @@ type CommentBase = {
   verified?: boolean;
   handle?: string;
   authorId?: string;
+  avatarUrl?: string | null;
 };
 
 export type PostReply = CommentBase & {
