@@ -81,6 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** Every member passes the "Ujian Kelayakan Bapak"; Google sign-ups take it after their first login. */
+export function needsJoke(user: User | null) {
+  return Boolean(user && !String(user.user_metadata?.joke ?? "").trim());
+}
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used inside <AuthProvider>");

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2, Info, MailCheck, KeyRound } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { needsJoke, useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { describeError } from "@/lib/social";
 import authMascot from "@/assets/bapak.png";
@@ -16,7 +16,7 @@ const inputClassName =
 export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { enabled, user } = useAuth();
+  const { enabled, user, signOut } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(location.pathname === "/signup" ? "signup" : "login");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -30,9 +30,36 @@ export default function Auth() {
 
   const redirectTo = (location.state as AuthLocationState)?.from ?? "/";
 
-  if (enabled && user) {
+  // Signed in but the joke exam is still open (Google sign-ups): show only the exam.
+  const jokeOnly = enabled && needsJoke(user);
+
+  if (enabled && user && !jokeOnly) {
     return <Navigate to={redirectTo} replace />;
   }
+
+  const jokeTooShort = () => {
+    if (joke.trim().length >= 10) return false;
+    toast.error("Jokes-nya belum lulus ujian, Pak.", { description: "Tulis minimal 10 karakter, segaring mungkin." });
+    return true;
+  };
+
+  const submitJoke = async () => {
+    if (!supabase || !user || jokeTooShort()) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { joke: joke.trim() } });
+      if (error) throw error;
+      // The joke becomes the starting bio, unless the member already wrote one.
+      await supabase.from("profiles").update({ bio: joke.trim() }).eq("id", user.id).eq("bio", "");
+      toast.success("Lulus ujian! Selamat bergabung di paguyuban, Pak!");
+      // The updated session clears jokeOnly, which redirects to redirectTo.
+    } catch (error) {
+      toast.error("Gagal menyimpan jokes", { description: describeError(error) });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const switchMode = () => {
     const nextMode = mode === "login" ? "signup" : "login";
@@ -63,10 +90,7 @@ export default function Auth() {
       return;
     }
 
-    if (mode === "signup" && joke.trim().length < 10) {
-      toast.error("Jokes-nya belum lulus ujian, Pak.", { description: "Tulis minimal 10 karakter, segaring mungkin." });
-      return;
-    }
+    if (mode === "signup" && jokeTooShort()) return;
 
     if (!supabase) {
       // Demo mode: there is no backend to authenticate against.
@@ -278,7 +302,7 @@ export default function Auth() {
                     Kembali ke halaman masuk
                   </button>
                 </motion.div>
-              ) : step === 1 ? (
+              ) : step === 1 && !jokeOnly ? (
                 <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 20 }}
@@ -433,7 +457,7 @@ export default function Auth() {
                   </div>
 
                   <button
-                    onClick={() => void handleNext()}
+                    onClick={() => void (jokeOnly ? submitJoke() : handleNext())}
                     disabled={loading}
                     className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-soft transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                   >
@@ -448,10 +472,10 @@ export default function Auth() {
                   </button>
 
                   <button
-                    onClick={() => setStep(1)}
+                    onClick={() => (jokeOnly ? void signOut() : setStep(1))}
                     className="mt-4 w-full text-center text-sm font-bold text-muted-foreground hover:text-foreground"
                   >
-                    Kembali ke data diri
+                    {jokeOnly ? "Keluar" : "Kembali ke data diri"}
                   </button>
                 </motion.div>
               )}
