@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { needsJoke, useAuth } from "@/contexts/AuthContext";
 
 /**
  * Wraps every content route: guests are sent to the login page and come back
@@ -21,9 +21,9 @@ export function RequireAuth() {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}${location.hash}` }} />;
-  }
+  const from = `${location.pathname}${location.search}${location.hash}`;
+  if (!user) return <Navigate to="/login" replace state={{ from }} />;
+  if (needsJoke(user)) return <Navigate to="/signup" replace state={{ from }} />;
 
   return <Outlet />;
 }

@@ -1,38 +1,87 @@
 import { useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2, Info, MailCheck, KeyRound } from "lucide-react";
+import { Sprout, ArrowRight, Smile, Mail, Lock, User, CheckCircle2, Info, MailCheck, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { needsJoke, useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { describeError } from "@/lib/social";
+import { cn } from "@/lib/utils";
 import authMascot from "@/assets/bapak.png";
 
 type AuthLocationState = { from?: string } | null;
 
 const inputClassName =
   "h-12 w-full rounded-2xl bg-muted/50 pl-12 pr-4 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20";
+const labelClassName = "mb-1.5 block text-sm font-bold text-foreground";
+const iconClassName = "pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground";
+const JOKE_MIN = 10;
+const JOKE_MAX = 280;
+
+function SignupSteps({ current }: { current: 1 | 2 }) {
+  return (
+    <div className="mb-6">
+      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        Langkah {current} dari 2 · {current === 1 ? "Data diri" : "Ujian jokes"}
+      </p>
+      <div className="mt-2 flex gap-1.5" aria-hidden="true">
+        {[1, 2].map((n) => (
+          <span key={n} className={cn("h-1.5 flex-1 rounded-full", n <= current ? "bg-primary" : "bg-muted")} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { enabled, user } = useAuth();
+  const { enabled, user, signOut } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(location.pathname === "/signup" ? "signup" : "login");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [joke, setJoke] = useState("");
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
   const redirectTo = (location.state as AuthLocationState)?.from ?? "/";
+  const jokeLength = joke.trim().length;
 
-  if (enabled && user) {
+  // Signed in but the joke exam is still open (Google sign-ups): show only the exam.
+  const jokeOnly = enabled && needsJoke(user);
+
+  if (enabled && user && !jokeOnly) {
     return <Navigate to={redirectTo} replace />;
   }
+
+  const jokeTooShort = () => {
+    if (joke.trim().length >= JOKE_MIN) return false;
+    toast.error("Jokes-nya belum lulus ujian, Pak.", { description: `Tulis minimal ${JOKE_MIN} karakter, segaring mungkin.` });
+    return true;
+  };
+
+  const submitJoke = async () => {
+    if (!supabase || !user || jokeTooShort()) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { joke: joke.trim() } });
+      if (error) throw error;
+      // The joke becomes the starting bio, unless the member already wrote one.
+      await supabase.from("profiles").update({ bio: joke.trim() }).eq("id", user.id).eq("bio", "");
+      toast.success("Lulus ujian! Selamat bergabung di paguyuban, Pak!");
+      // The updated session clears jokeOnly, which redirects to redirectTo.
+    } catch (error) {
+      toast.error("Gagal menyimpan jokes", { description: describeError(error) });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const switchMode = () => {
     const nextMode = mode === "login" ? "signup" : "login";
@@ -62,6 +111,8 @@ export default function Auth() {
       setStep(2);
       return;
     }
+
+    if (mode === "signup" && jokeTooShort()) return;
 
     if (!supabase) {
       // Demo mode: there is no backend to authenticate against.
@@ -158,7 +209,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="flex w-full max-w-[1000px] overflow-hidden rounded-[2.5rem] bg-surface shadow-lift">
         {/* Left Side - Visual */}
-        <div className="hidden w-1/2 flex-col justify-between bg-gradient-sage p-12 lg:flex">
+        <div className="hidden w-1/2 flex-col justify-between gap-8 bg-gradient-sage p-12 lg:flex">
           <Link to="/" className="flex items-center gap-2.5">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-md">
               <Sprout size={24} strokeWidth={2.5} />
@@ -193,6 +244,13 @@ export default function Auth() {
         {/* Right Side - Form */}
         <div className="flex w-full flex-col justify-center p-8 sm:p-12 lg:w-1/2">
           <div className="mx-auto w-full max-w-[360px]">
+            <Link to="/" className="mb-8 flex items-center gap-3 lg:hidden">
+              <img src={authMascot} alt="" className="h-12 w-12 rounded-2xl object-cover object-top ring-2 ring-primary/15" />
+              <span>
+                <span className="block text-lg font-black leading-tight tracking-tight text-foreground">Ruang Bapak</span>
+                <span className="block text-xs text-muted-foreground">Ngopi, cerita, dan jokes garing</span>
+              </span>
+            </Link>
             <AnimatePresence mode="wait">
               {awaitingConfirmation ? (
                 <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
@@ -234,16 +292,18 @@ export default function Auth() {
 
                   {!resetSent && (
                     <form onSubmit={sendPasswordReset} className="mt-8 space-y-4" noValidate>
+                      <label htmlFor="reset-email" className={labelClassName}>Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                        <input
-                          type="email"
-                          placeholder="Email"
-                          autoComplete="email"
-                          value={email}
-                          onChange={(event) => setEmail(event.target.value)}
-                          className={inputClassName}
-                        />
+                          <Mail className={iconClassName} size={18} />
+                          <input
+                            id="reset-email"
+                            type="email"
+                            placeholder="bapak@email.com"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            className={inputClassName}
+                          />
                       </div>
                       <button
                         type="submit"
@@ -273,14 +333,15 @@ export default function Auth() {
                     Kembali ke halaman masuk
                   </button>
                 </motion.div>
-              ) : step === 1 ? (
+              ) : step === 1 && !jokeOnly ? (
                 <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <header className="mb-10">
+                  {mode === "signup" && <SignupSteps current={1} />}
+                  <header className="mb-8">
                     <h1 className="text-3xl font-black text-foreground">
                       {mode === "login" ? "Masuk ke Ruang" : "Gabung Paguyuban"}
                     </h1>
@@ -300,39 +361,60 @@ export default function Auth() {
 
                   <form id="auth-credentials" onSubmit={handleNext} className="space-y-4" noValidate>
                     {mode === "signup" && (
+                      <div>
+                        <label htmlFor="auth-name" className={labelClassName}>Nama lengkap</label>
+                        <div className="relative">
+                          <User className={iconClassName} size={18} />
+                          <input
+                            id="auth-name"
+                            type="text"
+                            placeholder="Budi Santoso"
+                            autoComplete="name"
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            className={inputClassName}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label htmlFor="auth-email" className={labelClassName}>Email</label>
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                        <Mail className={iconClassName} size={18} />
                         <input
-                          type="text"
-                          placeholder="Nama Lengkap"
-                          autoComplete="name"
-                          value={name}
-                          onChange={(event) => setName(event.target.value)}
+                          id="auth-email"
+                          type="email"
+                          placeholder="bapak@email.com"
+                          autoComplete="email"
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
                           className={inputClassName}
                         />
                       </div>
-                    )}
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        autoComplete="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        className={inputClassName}
-                      />
                     </div>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                      <input
-                        type="password"
-                        placeholder="Password"
-                        autoComplete={mode === "login" ? "current-password" : "new-password"}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        className={inputClassName}
-                      />
+                    <div>
+                      <label htmlFor="auth-password" className={labelClassName}>Password</label>
+                      <div className="relative">
+                        <Lock className={iconClassName} size={18} />
+                        <input
+                          id="auth-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Minimal 6 karakter"
+                          autoComplete={mode === "login" ? "current-password" : "new-password"}
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          className={cn(inputClassName, "pr-12")}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((shown) => !shown)}
+                          aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                          aria-pressed={showPassword}
+                          className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
                     {mode === "login" && (
                       <div className="flex justify-end">
@@ -403,33 +485,43 @@ export default function Auth() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <header className="mb-8">
+                  <SignupSteps current={2} />
+                  <header className="mb-6">
                     <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
                       <Smile size={28} strokeWidth={2.5} />
                     </div>
                     <h1 className="text-3xl font-black text-foreground text-balance">Ujian Kelayakan Bapak</h1>
                     <p className="mt-2 text-muted-foreground">
-                      Sebelum masuk paguyuban, Bapak harus kasih satu **Jokes Bapak-Bapak** yang paling garing!
+                      Sebelum masuk paguyuban, Bapak harus kasih satu <strong className="text-foreground">Jokes Bapak-Bapak</strong> yang paling garing!
                     </p>
                   </header>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
+                    <label htmlFor="auth-joke" className={labelClassName}>Jokes Bapak</label>
                     <textarea
+                      id="auth-joke"
+                      aria-describedby="auth-joke-hint"
                       value={joke}
                       onChange={(event) => setJoke(event.target.value)}
-                      maxLength={280}
+                      maxLength={JOKE_MAX}
                       placeholder="Contoh: Sayur apa yang paling jago silat? Sayur Kol-li..."
                       className="min-h-[160px] w-full resize-none rounded-2xl bg-muted/50 p-4 text-[15px] outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all border border-transparent focus:border-primary/20"
                     />
-                    <div className="flex items-center gap-2 text-[13px] text-muted-foreground italic">
-                      <CheckCircle2 size={14} className="text-primary" />
+                    <div id="auth-joke-hint" className="flex items-start justify-between gap-3 text-[13px]">
+                      <span className={cn("font-medium", jokeLength >= JOKE_MIN ? "text-primary" : "text-muted-foreground")}>
+                        {jokeLength >= JOKE_MIN ? "Sip, sudah layak ikut ujian!" : `Kurang ${JOKE_MIN - jokeLength} karakter lagi (minimal ${JOKE_MIN}).`}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">{jokeLength}/{JOKE_MAX}</span>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-2xl bg-primary/5 p-3 text-[13px] text-muted-foreground">
+                      <CheckCircle2 size={18} className="mt-px shrink-0 text-primary" />
                       Tenang Pak, garing itu wajib di sini. Jokes ini jadi bio awal profil Bapak.
                     </div>
                   </div>
 
                   <button
-                    onClick={() => void handleNext()}
-                    disabled={loading}
+                    onClick={() => void (jokeOnly ? submitJoke() : handleNext())}
+                    disabled={loading || jokeLength < JOKE_MIN}
                     className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-soft transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
                   >
                     {loading ? (
@@ -443,10 +535,10 @@ export default function Auth() {
                   </button>
 
                   <button
-                    onClick={() => setStep(1)}
+                    onClick={() => (jokeOnly ? void signOut() : setStep(1))}
                     className="mt-4 w-full text-center text-sm font-bold text-muted-foreground hover:text-foreground"
                   >
-                    Kembali ke data diri
+                    {jokeOnly ? "Keluar" : "Kembali ke data diri"}
                   </button>
                 </motion.div>
               )}

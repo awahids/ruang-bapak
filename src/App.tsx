@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,8 +8,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CalmModeProvider } from "@/contexts/CalmModeContext";
 import { useRealtimeInbox } from "@/hooks/use-realtime";
 import Index from "./pages/Index.tsx";
-import Curhat from "./pages/Curhat.tsx";
-import Diskusi from "./pages/Diskusi.tsx";
 import AmanPak from "./pages/AmanPak.tsx";
 import Komunitas from "./pages/Komunitas.tsx";
 import Inbox from "./pages/Inbox.tsx";
@@ -22,7 +20,6 @@ import PostDetail from "./pages/PostDetail.tsx";
 import GroupPage from "./pages/GroupPage.tsx";
 import Cari from "./pages/Cari.tsx";
 import TagPage from "./pages/TagPage.tsx";
-import Tersimpan from "./pages/Tersimpan.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -50,14 +47,14 @@ const App = () => (
               {/* Everything else needs an account */}
               <Route element={<RequireAuth />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/curhat" element={<Curhat />} />
-                <Route path="/diskusi" element={<Diskusi />} />
+                <Route path="/curhat" element={<Navigate to="/?kategori=curhat" replace />} />
+                <Route path="/diskusi" element={<Navigate to="/?kategori=diskusi" replace />} />
                 <Route path="/aman-pak" element={<AmanPak />} />
                 <Route path="/komunitas" element={<Komunitas />} />
                 <Route path="/komunitas/:slug" element={<GroupPage />} />
                 <Route path="/cari" element={<Cari />} />
                 <Route path="/tag/:tag" element={<TagPage />} />
-                <Route path="/tersimpan" element={<Tersimpan />} />
+                <Route path="/tersimpan" element={<Navigate to="/profil?tab=tersimpan" replace />} />
                 <Route path="/inbox" element={<Inbox />} />
                 <Route path="/inbox/:conversationId" element={<Conversation />} />
                 <Route path="/profil" element={<Profil />} />

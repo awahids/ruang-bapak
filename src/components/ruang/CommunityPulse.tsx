@@ -11,8 +11,8 @@ const REFRESH_MS = 5 * 60_000;
 
 const roomByCategory: Record<PostCategory, { label: string; path: string }> = {
   status: { label: "Teras Bapak", path: "/" },
-  curhat: { label: "Uneg-uneg", path: "/curhat" },
-  diskusi: { label: "Diskusi", path: "/diskusi" },
+  curhat: { label: "Uneg-uneg", path: "/?kategori=curhat" },
+  diskusi: { label: "Diskusi", path: "/?kategori=diskusi" },
   checkin: { label: "Aman Pak?", path: "/aman-pak" },
   komunitas: { label: "Paguyuban", path: "/komunitas" },
   profil: { label: "Teras Bapak", path: "/" },
