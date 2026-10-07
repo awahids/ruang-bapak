@@ -123,7 +123,7 @@ export function PostPollView({ postId, poll }: { postId: number; poll: PostPoll 
   );
 }
 
-/** "Simpan" toggle; saved posts are listed on /tersimpan. */
+/** "Simpan" toggle; saved posts are listed on the "Tersimpan" tab of your profile. */
 export function BookmarkButton({ post, className }: { post: FeedItem; className?: string }) {
   const { enabled, user } = useAuth();
   const requireAuth = useRequireAuth();

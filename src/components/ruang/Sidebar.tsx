@@ -1,4 +1,4 @@
-import { Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, ShieldCheck, User } from "lucide-react";
+import { Bookmark, Moon, Sprout, PenLine, ChevronDown, LogIn, LogOut, ShieldCheck, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -59,7 +59,7 @@ function NavItem({
 }
 
 export function Sidebar() {
-  const { calm, toggleCalm } = useCalmMode();
+  const { calm } = useCalmMode();
   const rawInboxBadge = useInboxBadge(secondaryNavItems.find((item) => item.to === "/inbox")?.badge);
   const inboxBadge = calm ? undefined : rawInboxBadge;
   const { profile } = useAuth();
@@ -96,31 +96,13 @@ export function Sidebar() {
           ))}
           
           {profile?.is_moderator && <NavItem to="/moderasi" icon={ShieldCheck} label="Moderasi" />}
-
-          <button
-            onClick={() => {
-              toggleCalm();
-              toast(calm ? "Mode Rehat dimatikan" : "Mode Rehat aktif", {
-                description: calm ? "Angka dan notifikasi tampil lagi." : "Angka dukungan, komentar, dan notifikasi disembunyikan dulu. Istirahat yang cukup, Pak.",
-              });
-            }}
-            aria-pressed={calm}
-            title={calm ? "Matikan Mode Rehat" : "Sembunyikan angka dan notifikasi sejenak"}
-            className={cn(
-              "group flex items-center gap-4 rounded-full px-4 py-3 text-left transition-all hover:bg-primary-soft/50",
-              calm ? "bg-primary-soft text-primary" : "text-foreground",
-            )}
-          >
-            <Moon size={24} strokeWidth={2} fill={calm ? "currentColor" : "none"} />
-            <span className="hidden text-xl lg:inline">{calm ? "Mode Rehat: Aktif" : "Mode Rehat"}</span>
-          </button>
         </nav>
 
         {/* Post Button */}
         <div className="mt-4 px-2">
-          <Link to="/aman-pak" className="flex w-full items-center justify-center gap-3 rounded-full bg-gradient-sage py-3.5 text-lg font-bold text-primary-foreground shadow-lift transition-transform hover:scale-[1.02] active:scale-[0.98]">
+          <Link to="/" state={{ compose: true }} className="flex w-full items-center justify-center gap-3 rounded-full bg-gradient-sage py-3.5 text-lg font-bold text-primary-foreground shadow-lift transition-transform hover:scale-[1.02] active:scale-[0.98]">
             <PenLine size={20} strokeWidth={2.5} />
-            <span className="hidden lg:inline">Absen Pak</span>
+            <span className="hidden lg:inline">Tulis</span>
           </Link>
         </div>
       </div>
@@ -132,24 +114,12 @@ export function Sidebar() {
 
 function SidebarAccount() {
   const { enabled, loading, user, profile, signOut } = useAuth();
+  const { calm, toggleCalm } = useCalmMode();
   const navigate = useNavigate();
 
-  if (!enabled) {
-    return (
-      <Link to="/profil" className="mt-auto flex items-center gap-3 rounded-full p-3 transition-colors hover:bg-muted/50">
-        <Avatar initials="AP" color="hsl(28 33% 41%)" size={40} />
-        <div className="hidden flex-1 text-left lg:block">
-          <p className="text-sm font-bold leading-none text-foreground">Ari Pratama</p>
-          <p className="mt-1 text-xs text-muted-foreground">@aripratama</p>
-        </div>
-        <ChevronDown size={16} className="hidden text-muted-foreground lg:block" />
-      </Link>
-    );
-  }
+  if (enabled && loading) return <div className="mt-auto h-16" />;
 
-  if (loading) return <div className="mt-auto h-16" />;
-
-  if (!user) {
+  if (enabled && !user) {
     return (
       <Link
         to="/login"
@@ -161,7 +131,16 @@ function SidebarAccount() {
     );
   }
 
-  const name = profile?.display_name ?? user.email ?? "Bapak";
+  // Demo mode has no account: show the sample bapak.
+  const name = enabled ? profile?.display_name ?? user?.email ?? "Bapak" : "Ari Pratama";
+  const handle = enabled ? profile?.username : "aripratama";
+
+  const handleToggleCalm = () => {
+    toggleCalm();
+    toast(calm ? "Mode Rehat dimatikan" : "Mode Rehat aktif", {
+      description: calm ? "Angka dan notifikasi tampil lagi." : "Angka dukungan, komentar, dan notifikasi disembunyikan dulu. Istirahat yang cukup, Pak.",
+    });
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -173,24 +152,44 @@ function SidebarAccount() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="mt-auto flex items-center gap-3 rounded-full p-3 text-left transition-colors hover:bg-muted/50">
-          <Avatar initials={getInitials(name)} color={profile?.avatar_color ?? "hsl(28 33% 41%)"} src={profile?.avatar_url} size={40} />
+          <span className="relative shrink-0">
+            <Avatar initials={getInitials(name)} color={profile?.avatar_color ?? "hsl(28 33% 41%)"} src={profile?.avatar_url} size={40} />
+            {calm && (
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-surface" title="Mode Rehat aktif">
+                <Moon size={11} fill="currentColor" aria-label="Mode Rehat aktif" />
+              </span>
+            )}
+          </span>
           <div className="hidden min-w-0 flex-1 lg:block">
             <p className="truncate text-sm font-bold leading-none text-foreground">{name}</p>
-            {profile && <p className="mt-1 truncate text-xs text-muted-foreground">@{profile.username}</p>}
+            {handle && <p className="mt-1 truncate text-xs text-muted-foreground">{calm ? "Mode Rehat aktif" : `@${handle}`}</p>}
           </div>
           <ChevronDown size={16} className="hidden text-muted-foreground lg:block" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="w-56">
+      <DropdownMenuContent align="start" side="top" className="w-60">
         <DropdownMenuItem onSelect={() => navigate("/profil")}>
           <User size={14} className="mr-2" />
           Profil Saya
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={handleSignOut} className="text-destructive focus:text-destructive">
-          <LogOut size={14} className="mr-2" />
-          Keluar
+        <DropdownMenuItem onSelect={() => navigate("/profil?tab=tersimpan")}>
+          <Bookmark size={14} className="mr-2" />
+          Tersimpan
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleToggleCalm}>
+          <Moon size={14} className="mr-2" fill={calm ? "currentColor" : "none"} />
+          {calm ? "Matikan Mode Rehat" : "Mode Rehat"}
+          <span className="ml-auto text-xs text-muted-foreground">{calm ? "Aktif" : "Mati"}</span>
+        </DropdownMenuItem>
+        {enabled && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={handleSignOut} className="text-destructive focus:text-destructive">
+              <LogOut size={14} className="mr-2" />
+              Keluar
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

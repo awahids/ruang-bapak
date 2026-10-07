@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { blockUser, type ReportTarget } from "@/lib/moderation";
@@ -68,7 +69,7 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
 
   // "Kawan Akrab" shows posts from followed bapak on the page feeds once signed in.
   const { enabled, user } = useAuth();
-  const followingTab = enabled && activeTab === 3 && feedFilter === undefined && defaultFilter?.kind === "page";
+  const followingTab = enabled && activeTab === 2 && feedFilter === undefined && defaultFilter?.kind === "page";
   const followingFilter = useMemo<FeedFilter | null>(
     () => (followingTab && user && defaultFilter?.kind === "page" ? { kind: "following", pageKey: defaultFilter.pageKey, followerId: user.id } : null),
     [followingTab, user, defaultFilter],
@@ -82,19 +83,22 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
     const source = [...items];
 
     if (activeTab === 1) {
-      return source.sort((a, b) => b.id - a.id);
-    }
-
-    if (activeTab === 2) {
       return source.sort((a, b) => b.support + b.safe - (a.support + a.safe));
     }
 
-    if (activeTab === 3) {
+    if (activeTab === 2) {
       return source.filter((item) => item.verified || item.support >= 20);
     }
 
     return source;
   }, [items, activeTab, followingTab, followingFeed.items]);
+
+  // The sidebar's "Tulis" button lands here with { compose: true }: put the cursor in the composer.
+  const location = useLocation();
+  const compose = (location.state as { compose?: boolean } | null)?.compose;
+  useEffect(() => {
+    if (compose) document.getElementById("feed-composer-text")?.focus();
+  }, [compose, location.key]);
 
   const shownEmptyState = followingTab
     ? user
@@ -195,9 +199,12 @@ export function FeedPage({ pageKey, renderHeader, feedFilter, showComposer = tru
 
         {showComposer && <FeedComposer mode={config.composerMode} onSubmit={handleSubmitComposer} defaultTag={fallbackTagByMode[config.composerMode].tag} />}
 
-        <div className="border-b border-border/40">
-          <TabBar active={activeTab} onChange={setActiveTab} />
-        </div>
+        {/* A profile already has its own Postingan · Tersimpan tabs; sorting someone's posts adds nothing. */}
+        {pageKey !== "profil" && (
+          <div className="border-b border-border/40">
+            <TabBar active={activeTab} onChange={setActiveTab} />
+          </div>
+        )}
 
         {shownFeed.isLoading ? (
           <div className="flex justify-center px-5 py-20 text-muted-foreground">

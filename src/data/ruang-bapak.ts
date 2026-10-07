@@ -6,9 +6,7 @@ import {
   Home,
   Inbox,
   Search,
-  Bookmark,
   Leaf,
-  MessageCircle,
   Moon,
   Plus,
   Radio,
@@ -564,8 +562,6 @@ export const composerPresets: Record<ComposerMode, ComposerPreset> = {
 
 export const primaryNavItems: PrimaryNavItem[] = [
   { label: "Teras Bapak", to: "/", icon: Home },
-  { label: "Uneg-uneg", to: "/curhat", icon: MessageCircle },
-  { label: "Diskusi", to: "/diskusi", icon: Users },
   { label: "Aman Pak?", to: "/aman-pak", icon: ThumbsUp },
   { label: "Paguyuban", to: "/komunitas", icon: UserCheck },
 ];
@@ -573,7 +569,6 @@ export const primaryNavItems: PrimaryNavItem[] = [
 export const secondaryNavItems: SecondaryNavItem[] = [
   { label: "Inbox", to: "/inbox", icon: Inbox, badge: 3 },
   { label: "Cari", to: "/cari", icon: Search, hint: "Postingan, bapak, dan tag" },
-  { label: "Tersimpan", to: "/tersimpan", icon: Bookmark, hint: "Postingan yang Bapak simpan" },
   { label: "Profil", to: "/profil", icon: User },
 ];
 

@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
-import { Flame, Clock, TrendingUp, UserCheck, SlidersHorizontal } from "lucide-react";
+import { Clock, TrendingUp, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { icon: Flame, label: "Lagi Anget" },
-  { icon: Clock, label: "Baru Nongol" },
+  { icon: Clock, label: "Terbaru" },
   { icon: TrendingUp, label: "Lagi Rame" },
   { icon: UserCheck, label: "Kawan Akrab" },
 ];
@@ -43,12 +42,6 @@ export function TabBar({ active, onChange }: TabBarProps) {
           );
         })}
       </div>
-      <button
-        aria-label="Filter"
-        className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <SlidersHorizontal size={16} strokeWidth={2} />
-      </button>
     </div>
   );
 }

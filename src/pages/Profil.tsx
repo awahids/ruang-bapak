@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { EditProfileDialog } from "@/components/ruang/EditProfileDialog";
 import { FeedPage } from "@/components/ruang/FeedPage";
@@ -11,6 +11,7 @@ import { ProfileHeader } from "@/components/ruang/ProfileHeader";
 import { RuangShell } from "@/components/ruang/RuangShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { cn } from "@/lib/utils";
 import { startConversation } from "@/lib/inbox";
 import { blockUser, fetchBlockStatus, unblockUser } from "@/lib/moderation";
 import {
@@ -25,32 +26,77 @@ import {
   updateAvatar,
   removeAvatar,
   type AuthorFilter,
+  type FeedFilter,
   type Profile,
   type ProfileUpdate,
 } from "@/lib/social";
 
 const formatCount = (value: number) => new Intl.NumberFormat("id-ID", { notation: "compact" }).format(value);
 
-const DemoProfil = () => (
-  <FeedPage
-    pageKey="profil"
-    renderHeader={() => (
-      <ProfileHeader
-        name="Ari Pratama"
-        handle="aripratama"
-        initials="AP"
-        color="hsl(28 33% 41%)"
-        bio="Bapak dari 2 anak yang lagi belajar jadi sabar. Suka ngopi, oprek mesin, dan dengerin podcast parenting. Mari berbagi ilmu, Pak!"
-        stats={[
-          { label: "Dukungan", value: "1.2k" },
-          { label: "Postingan", value: "156" },
-          { label: "Reputasi", value: "Bapak Hebat" }
-        ]}
-        onEdit={() => {}}
-      />
-    )}
-  />
-);
+const BOOKMARKS: FeedFilter = { kind: "bookmarks" };
+const SAVED_EMPTY = { title: "Belum ada yang disimpan", hint: "Ketuk ikon simpan di postingan untuk membacanya lagi nanti, Pak." };
+
+/** "Postingan · Tersimpan" on your own profile; the choice lives in ?tab= so /tersimpan can link straight to it. */
+function useSavedTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const saved = searchParams.get("tab") === "tersimpan";
+
+  const tabs = (
+    <div className="flex border-b border-border/40 bg-surface px-4 sm:px-6" role="tablist" aria-label="Isi profil">
+      {[
+        { label: "Postingan", active: !saved, params: {} },
+        { label: "Tersimpan", active: saved, params: { tab: "tersimpan" } },
+      ].map((tab) => (
+        <button
+          key={tab.label}
+          type="button"
+          role="tab"
+          aria-selected={tab.active}
+          onClick={() => setSearchParams(tab.params, { replace: true })}
+          className={cn(
+            "-mb-px border-b-2 px-4 py-3 text-sm font-bold transition-colors",
+            tab.active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return { saved, tabs };
+}
+
+const DemoProfil = () => {
+  const { saved, tabs } = useSavedTab();
+
+  return (
+    <FeedPage
+      pageKey="profil"
+      showComposer={!saved}
+      demoItems={saved ? [] : undefined}
+      emptyState={saved ? SAVED_EMPTY : undefined}
+      renderHeader={() => (
+        <>
+          <ProfileHeader
+            name="Ari Pratama"
+            handle="aripratama"
+            initials="AP"
+            color="hsl(28 33% 41%)"
+            bio="Bapak dari 2 anak yang lagi belajar jadi sabar. Suka ngopi, oprek mesin, dan dengerin podcast parenting. Mari berbagi ilmu, Pak!"
+            stats={[
+              { label: "Dukungan", value: "1.2k" },
+              { label: "Postingan", value: "156" },
+              { label: "Reputasi", value: "Bapak Hebat" }
+            ]}
+            onEdit={() => {}}
+          />
+          {tabs}
+        </>
+      )}
+    />
+  );
+};
 
 const CenteredMessage = ({ title, body }: { title?: string; body?: string }) => (
   <RuangShell>
@@ -157,6 +203,9 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
     [isOwn, profile.id, profile.username],
   );
 
+  const { saved: savedTab, tabs } = useSavedTab();
+  const saved = isOwn && savedTab;
+
   const { data: stats } = useQuery({
     queryKey: ["profile-stats", filter],
     queryFn: () => fetchProfileStats(filter),
@@ -180,49 +229,54 @@ function ProfileFeed({ profile, isOwn }: { profile: Profile; isOwn: boolean }) {
     <>
       <FeedPage
         pageKey="profil"
-        feedFilter={filter}
-        showComposer={isOwn}
+        feedFilter={saved ? BOOKMARKS : filter}
+        showComposer={isOwn && !saved}
         emptyState={
-          isOwn
-            ? undefined
-            : blockedByMe
-              ? { title: `Postingan @${profile.username} disembunyikan`, hint: "Buka blokir untuk melihatnya lagi." }
-              : { title: `@${profile.username} belum punya postingan`, hint: "Postingan anonim tidak ditampilkan di profil." }
+          saved
+            ? SAVED_EMPTY
+            : isOwn
+              ? undefined
+              : blockedByMe
+                ? { title: `Postingan @${profile.username} disembunyikan`, hint: "Buka blokir untuk melihatnya lagi." }
+                : { title: `@${profile.username} belum punya postingan`, hint: "Postingan anonim tidak ditampilkan di profil." }
         }
         renderHeader={() => (
-          <ProfileHeader
-            name={profile.display_name}
-            handle={profile.username}
-            initials={getInitials(profile.display_name)}
-            color={profile.avatar_color}
-            avatarUrl={profile.avatar_url}
-            bio={profile.bio}
-            location={profile.location}
-            joinedLabel={`Bergabung ${format(new Date(profile.created_at), "MMMM yyyy", { locale: localeId })}`}
-            verified={profile.verified}
-            stats={[
-              { label: "Pengikut", value: formatCount(followStats?.followers ?? 0) },
-              { label: "Mengikuti", value: formatCount(followStats?.following ?? 0) },
-              { label: "Postingan", value: formatCount(stats?.posts ?? 0) },
-              { label: "Dukungan", value: formatCount(stats?.support ?? 0) },
-            ]}
-            onEdit={isOwn ? () => setEditing(true) : undefined}
-            onMessage={isOwn || blockedByMe || blockedMe ? undefined : handleMessage}
-            messagePending={openingChat}
-            onToggleFollow={isOwn || blockedByMe || blockedMe ? undefined : handleToggleFollow}
-            following={following}
-            followPending={followPending}
-            onToggleBlock={isOwn ? undefined : handleToggleBlock}
-            blocked={blockedByMe}
-            blockPending={blockPending}
-            notice={
-              blockedByMe
-                ? `Bapak memblokir @${profile.username}. Postingan dan komentarnya disembunyikan untuk Bapak.`
-                : blockedMe
-                  ? `@${profile.username} membatasi interaksi dengan Bapak.`
-                  : undefined
-            }
-          />
+          <>
+            <ProfileHeader
+              name={profile.display_name}
+              handle={profile.username}
+              initials={getInitials(profile.display_name)}
+              color={profile.avatar_color}
+              avatarUrl={profile.avatar_url}
+              bio={profile.bio}
+              location={profile.location}
+              joinedLabel={`Bergabung ${format(new Date(profile.created_at), "MMMM yyyy", { locale: localeId })}`}
+              verified={profile.verified}
+              stats={[
+                { label: "Pengikut", value: formatCount(followStats?.followers ?? 0) },
+                { label: "Mengikuti", value: formatCount(followStats?.following ?? 0) },
+                { label: "Postingan", value: formatCount(stats?.posts ?? 0) },
+                { label: "Dukungan", value: formatCount(stats?.support ?? 0) },
+              ]}
+              onEdit={isOwn ? () => setEditing(true) : undefined}
+              onMessage={isOwn || blockedByMe || blockedMe ? undefined : handleMessage}
+              messagePending={openingChat}
+              onToggleFollow={isOwn || blockedByMe || blockedMe ? undefined : handleToggleFollow}
+              following={following}
+              followPending={followPending}
+              onToggleBlock={isOwn ? undefined : handleToggleBlock}
+              blocked={blockedByMe}
+              blockPending={blockPending}
+              notice={
+                blockedByMe
+                  ? `Bapak memblokir @${profile.username}. Postingan dan komentarnya disembunyikan untuk Bapak.`
+                  : blockedMe
+                    ? `@${profile.username} membatasi interaksi dengan Bapak.`
+                    : undefined
+              }
+            />
+            {isOwn && tabs}
+          </>
         )}
       />
       {isOwn && <EditProfileDialog profile={profile} open={editing} onOpenChange={setEditing} onSave={handleSave} onPhotoChange={handlePhotoChange} />}

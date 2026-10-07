@@ -351,6 +351,7 @@ export function FeedComposer({ mode, onSubmit, defaultTag }: FeedComposerProps) 
           
           <textarea
             ref={textareaRef}
+            id="feed-composer-text"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={preset.placeholder}
