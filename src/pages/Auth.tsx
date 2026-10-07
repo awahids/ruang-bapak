@@ -63,6 +63,11 @@ export default function Auth() {
       return;
     }
 
+    if (mode === "signup" && joke.trim().length < 10) {
+      toast.error("Jokes-nya belum lulus ujian, Pak.", { description: "Tulis minimal 10 karakter, segaring mungkin." });
+      return;
+    }
+
     if (!supabase) {
       // Demo mode: there is no backend to authenticate against.
       navigate("/");
@@ -409,7 +414,7 @@ export default function Auth() {
                     </div>
                     <h1 className="text-3xl font-black text-foreground text-balance">Ujian Kelayakan Bapak</h1>
                     <p className="mt-2 text-muted-foreground">
-                      Sebelum masuk paguyuban, Bapak harus kasih satu **Jokes Bapak-Bapak** yang paling garing!
+                      Sebelum masuk paguyuban, Bapak harus kasih satu <strong className="text-foreground">Jokes Bapak-Bapak</strong> yang paling garing!
                     </p>
                   </header>
 
