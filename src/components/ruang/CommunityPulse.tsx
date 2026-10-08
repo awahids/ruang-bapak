@@ -93,13 +93,13 @@ export function CheckinToday() {
           <h3 className="text-lg font-bold">Aman Pak? Hari Ini</h3>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-3xl font-black">{isLoading ? "…" : formatNumber(count ?? 0)}</span>
-            <span className="text-xs font-medium opacity-80">cek-in</span>
+            <span className="text-xs font-medium opacity-80">absen</span>
           </div>
         </div>
         <ThumbsUp size={24} strokeWidth={2.5} />
       </div>
       <p className="mt-2 text-[13px] leading-relaxed opacity-90">
-        {count ? 'Setiap "Aman Pak?" sangat berarti bagi sesama Bapak.' : "Belum ada yang cek-in hari ini. Jadi yang pertama, Pak!"}
+        {count ? 'Setiap "Aman Pak?" sangat berarti bagi sesama Bapak.' : "Belum ada yang absen hari ini. Jadi yang pertama, Pak!"}
       </p>
     </Link>
   );

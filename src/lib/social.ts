@@ -587,6 +587,19 @@ export function describeError(error: unknown): string {
   if (/profiles_username_key|duplicate key/i.test(message)) return "Username itu sudah dipakai bapak lain.";
   if (/username_check|profiles_username_check/i.test(message)) return "Username hanya boleh huruf kecil, angka, dan _ (3–30 karakter).";
   if (/provider is not enabled/i.test(message)) return "Login Google belum diaktifkan di server.";
+  if (/failed to fetch|networkerror|network request failed|load failed|fetch failed|timed? ?out/i.test(message)) return "Koneksi terputus, Pak. Cek sinyal atau Wi-Fi, lalu coba lagi.";
+  if (/jwt|refresh token|session (not found|missing|expired)|auth session missing/i.test(message)) return "Sesi Bapak sudah habis. Silakan masuk lagi.";
+  if (/rate limit|too many requests|for security purposes/i.test(message)) return "Kebanyakan percobaan, Pak. Tunggu sebentar lalu coba lagi.";
+  if (/row-level security|permission denied/i.test(message)) return "Bapak belum punya izin untuk melakukan ini.";
+  if (/maximum allowed size|payload too large/i.test(message)) return "Ukuran file terlalu besar, Pak.";
 
-  return message || "Terjadi kesalahan. Coba lagi sebentar, Pak.";
+  // Our own messages (and the database's RAISE EXCEPTION texts) are Indonesian; anything that still reads
+  // like an English server error is replaced so members never see raw technical text.
+  // ponytail: word-list heuristic; map the code (error.code / status) instead if new English messages slip through.
+  if (/\b(the|is|not|failed|error|invalid|unable|cannot|could|request|violates|denied|unauthorized|forbidden|exceeded|unexpected)\b/i.test(message)) {
+    console.warn("Pesan error asli:", message);
+    return "Ada kendala di server. Coba lagi sebentar lagi, Pak.";
+  }
+
+  return message || "Ada kendala di server. Coba lagi sebentar lagi, Pak.";
 }

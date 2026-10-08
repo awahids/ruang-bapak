@@ -28,7 +28,7 @@ export function ThreadRow({ thread, onOpen }: { thread: InboxThread; onOpen: () 
             <span className="italic">Belum ada pesan. Sapa duluan, Pak!</span>
           ) : (
             <>
-              {thread.lastFromMe && <span className="text-muted-foreground">Anda: </span>}
+              {thread.lastFromMe && <span className="text-muted-foreground">Bapak: </span>}
               {thread.lastBody}
             </>
           )}

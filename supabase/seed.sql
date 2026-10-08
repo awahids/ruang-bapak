@@ -114,7 +114,7 @@ insert into seed_posts (key, author, category, tag, tone, body, anonymous, age, 
   ('p302', 'ayah_naya', 'diskusi', 'Stress Kerja', 'clay', 'Ada yang punya ritual transisi dari mode kerja ke mode keluarga supaya tidak membawa beban kantor ke rumah?', false, '2 hours', 7),
   ('p303', 'dua_shift', 'diskusi', 'Kekhawatiran', 'plum', 'Anak mulai susah diajak ngobrol akhir-akhir ini. Pendekatan komunikasi apa yang efektif untuk anak usia SD?', false, '6 hours', 11),
   -- Aman Pak? (cek-in)
-  ('p401', 'bapak_siaga', 'checkin', 'Cek-in Harian', 'sage', 'Hari ini saya memilih jujur: energi lagi 60%. Tapi tetap hadir buat keluarga malam ini.', false, '3 minutes', 15),
+  ('p401', 'bapak_siaga', 'checkin', 'Absen Harian', 'sage', 'Hari ini saya memilih jujur: energi lagi 60%. Tapi tetap hadir buat keluarga malam ini.', false, '3 minutes', 15),
   ('p402', 'ayah_nafisa', 'checkin', 'Dukungan', 'clay', 'Terima kasih untuk bapak-bapak yang kemarin ngecek kabar. Saya merasa lebih kuat hari ini.', false, '3 hours', 11),
   ('p403', 'bapak_introvert', 'checkin', 'Pemulihan', 'blue', 'Saya lagi fokus tidur cukup 7 jam selama seminggu. Semoga mood dan sabar ke anak ikut membaik.', false, '4 hours', 9),
   -- Paguyuban (komunitas)

@@ -232,7 +232,7 @@ const PostDetail = () => {
             <Textarea
               value={commentDraft}
               onChange={(event) => setCommentDraft(event.target.value)}
-              placeholder="Tulis komentar Anda..."
+              placeholder="Tulis komentar, Pak..."
               rows={3}
               className="resize-none"
             />

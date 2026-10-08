@@ -166,7 +166,7 @@ export function AbsenPakCard() {
       if (shareAsCheckin && isSupabaseConfigured) {
         await createPost({
           category: "checkin",
-          tag: "Cek-in Harian",
+          tag: "Absen Harian",
           tagTone: "sage",
           body: cleanedNote || `Absen hari ini: ${statusLabelMap[status]}.`,
           anonymous: false,
@@ -178,7 +178,7 @@ export function AbsenPakCard() {
       }
 
       toast.success(todayRecord ? "Absen hari ini diperbarui" : "Absen tercatat, terima kasih Pak!", {
-        description: shareAsCheckin ? "Juga dibagikan sebagai cek-in di Aman Pak?" : undefined,
+        description: shareAsCheckin ? "Juga tampil di Aman Pak?" : undefined,
       });
       setNote("");
       setShareAsCheckin(false);
@@ -250,7 +250,7 @@ export function AbsenPakCard() {
             onChange={(event) => setShareAsCheckin(event.target.checked)}
             className="h-4 w-4 accent-[hsl(var(--primary))]"
           />
-          Bagikan juga sebagai cek-in di Aman Pak?
+          Tampilkan juga di Aman Pak?
         </label>
       )}
 

@@ -47,7 +47,7 @@ const fallbackTagByMode: Record<ComposerMode, { tag: string; tone: FeedItem["tag
   status: { tag: "Update Bapak", tone: "sage" },
   curhat: { tag: "Curhat Baru", tone: "clay" },
   diskusi: { tag: "Diskusi Baru", tone: "blue" },
-  checkin: { tag: "Cek-in Harian", tone: "sage" },
+  checkin: { tag: "Absen Harian", tone: "sage" },
   komunitas: { tag: "Aktivitas Komunitas", tone: "blue" },
   pesan: { tag: "Pesan Baru", tone: "clay" },
   profil: { tag: "Update Profil", tone: "sage" },
