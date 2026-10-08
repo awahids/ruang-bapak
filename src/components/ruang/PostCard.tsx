@@ -198,7 +198,7 @@ export function PostCard({ post, index, onToggleLike, onDelete, onReport, onBloc
 
           <button 
             onClick={(e) => { e.stopPropagation(); void toggleSafe(); }}
-            aria-label={safe ? "Batal dukung" : "Dukung (aman)"}
+            aria-label={safe ? "Batal dukung" : "Dukung"}
             aria-pressed={safe}
             className={cn(
               "group flex items-center gap-2 transition-colors",

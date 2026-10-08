@@ -122,7 +122,7 @@ export function RightPanel({ mode = "desktop-column" }: RightPanelProps) {
               <h3 className="text-lg font-bold">Aman Pak? Hari Ini</h3>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <span className="text-3xl font-black">1.247</span>
-                <span className="text-xs font-medium opacity-80">cek-in</span>
+                <span className="text-xs font-medium opacity-80">absen</span>
               </div>
             </div>
             <ThumbsUp size={24} strokeWidth={2.5} />

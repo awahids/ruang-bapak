@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCommentTree, displayHandle, getInitials, MAX_TAG_LENGTH, normalizeTag, searchPattern } from "@/lib/social";
+import { buildCommentTree, describeError, displayHandle, getInitials, MAX_TAG_LENGTH, normalizeTag, searchPattern } from "@/lib/social";
 
 const author = { id: "u-ari", username: "ari", display_name: "Ari Pratama", avatar_color: "hsl(1 1% 1%)", avatar_url: null, verified: false };
 const at = (minute: number) => new Date(Date.UTC(2026, 0, 1, 0, minute)).toISOString();
@@ -48,5 +48,18 @@ describe("searchPattern", () => {
     expect(searchPattern("50%_off*")).toBe("*50 off*");
     expect(searchPattern("a")).toBeNull();
     expect(searchPattern(" , ")).toBeNull();
+  });
+});
+
+describe("describeError", () => {
+  it("translates server errors and keeps Indonesian messages", () => {
+    expect(describeError(new TypeError("Failed to fetch"))).toMatch(/^Koneksi terputus/);
+    expect(describeError({ message: "JWT expired" })).toMatch(/^Sesi Bapak sudah habis/);
+    expect(describeError(new Error("Email rate limit exceeded"))).toMatch(/^Kebanyakan percobaan/);
+    expect(describeError({ message: "new row violates row-level security policy for table \"posts\"" })).toMatch(/izin/);
+    expect(describeError(new Error("Something unexpected happened"))).toMatch(/^Ada kendala di server/);
+    expect(describeError({ message: "Tidak bisa mengirim pesan ke pengguna ini." })).toBe("Tidak bisa mengirim pesan ke pengguna ini.");
+    expect(describeError(new Error("Ukuran foto maksimal 10 MB."))).toBe("Ukuran foto maksimal 10 MB.");
+    expect(describeError(null)).toMatch(/^Ada kendala di server/);
   });
 });

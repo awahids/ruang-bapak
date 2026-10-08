@@ -9,7 +9,7 @@ export function CheckInPost({ item }: { item: FeedItem }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm">
           <span className="font-bold text-foreground">{item.name}</span>
-          <span className="mx-2 text-muted-foreground">melakukan cek-in:</span>
+          <span className="mx-2 text-muted-foreground">absen:</span>
           <span className="italic text-foreground/80">"{item.text}"</span>
         </p>
         <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
